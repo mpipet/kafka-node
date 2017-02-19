@@ -14,7 +14,7 @@ const payload = [
 				messages: [
 					{
 						'offset': 0,
-						'timestamp': 100,
+						'timestamp': 1487542182,
 						'key': 'erg',
 						'value': 'loooolfzefzefzfzf'		
 					}
@@ -25,7 +25,7 @@ const payload = [
 				messages: [
 					{
 						'offset': 0,
-						'timestamp': 1000,
+						'timestamp': 1487542182,
 						'key': 'ergree',
 						'value': 'gegrr'		
 					}
@@ -37,9 +37,11 @@ const payload = [
 	}
 ];
 
-const correlationId = 666;
 const requiredAcks = 1;
+
+const correlationId = 666;
 const timeout = 1000;
+
 
 const produceRequest = new ProduceRequest();
 // Get Buffer size

@@ -5,7 +5,6 @@ const MetadataResponse = require('../../protocol/MetadataResponse');
 const MetadataRequest = require('../../protocol/MetadataRequest');
 
 const correlationId = 666;
-const requiredAcks = 1;
 const timeout = 1000;
 
 const topics = [
