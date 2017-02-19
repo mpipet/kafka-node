@@ -7,8 +7,8 @@ class MetadataResponse extends Response {
 		return {
 			correlationId: this.readInt32(),
 			broker: this.readBrokers(),
-			cluster_id: this.readString(),
-			controller_id: this.readInt32(),
+			clusterId: this.readString(),
+			controllerId: this.readInt32(),
 			topicMetadata: this.readTopicMetadata()
 		};
 	}
