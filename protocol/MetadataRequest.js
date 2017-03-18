@@ -1,24 +1,41 @@
 const _ = require('underscore');
 const Request = require('./Request');
+const cst = require('./constants');
 
-
-class MetadataRequest extends Request {
-
-	write(buff, offset, topics) {
-		offset = this.writeInt32(buff, offset, topics.length);
-		topics.forEach((topic) => {
-			offset = this.writeString(buff, offset, topic);
-		});
-		return offset;
-	}	
-
-	getSize(topics) {
-		const topicsSize = _.reduce(topics, (memo, topic) => {
-			return memo + (4 + topic.length);
-		}, 0);
-		return topics.length + topicsSize;
+const schema = {
+	topics: {
+		Array: 'string'
+	}
+};
+/*
+var schema = {
+	brokers: {			
+			node_id: 'int32',
+			host: 'string',
+			port: 'int32'
+	},
+	topic_metadata: {
+			topic_error_code: 'int16',
+			topic: 'string',
+			partition_metadata: {
+				partition_error_code: 'int16',
+				partition_id: 'int32',
+				leader: 'int32',
+				replicas: {
+					replicas: 'int32'
+				},
+				isr: {
+					isr: 'int32'
+				}
+			}		
 	}
 
+
+};*/
+class MetadataRequest extends Request {
+	constructor(payload, apiVersion, correlationId, clientId) {
+		super(schema, cst.METADATA_REQUEST, payload, apiVersion, correlationId, clientId);
+	}
 }
 
 module.exports = MetadataRequest;

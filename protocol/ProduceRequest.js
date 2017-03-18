@@ -2,93 +2,73 @@ const _ = require('underscore');
 const crc32 = require('crc-32');
 
 const Request = require('./Request');
-
+const cst = require('./constants');
 
 const MAGIC_BYTE = 1;
 
+const schema = {
+	acks: 'int16',
+	timeout: 'int32',
+	topics: {
+		Array: {
+			topic: 'string',
+			partitions: {
+				Array: {
+					partition: 'int32',
+					//@TODO remove size from schema
+					size: 'int32',
+					messages: 'MessageSet'
+				}
+			}
+		}
+	},
+
+};
+
 class ProduceRequest extends Request {
 
-	write(buff, offset, requiredAcks, timeout, payload) {
-		offset = this.writeInt16(buff, offset, requiredAcks);
-		offset = this.writeInt32(buff, offset, timeout);
-		return this.writeTopics(buff, offset, payload);
+	constructor(payload, apiVersion, correlationId, clientId) {
+		super(schema, cst.PRODUCE_REQUEST, payload, apiVersion, correlationId, clientId);
 	}
 
-	writeTopics(buff, offset, topics) {
-		offset = this.writeInt32(buff, offset, topics.length);
-
-		topics.forEach((topic) => {			
-			offset = this.writeString(buff, offset, topic.topic);
-			offset = this.writePartitions(buff, offset, topic.partitions);
-		});
-		return offset;
-	}
-
-	writePartitions(buff, offset, partitions) {
-		offset = this.writeInt32(buff, offset, partitions.length);
-
-		partitions.forEach((partition) => {			
-			offset = this.writeInt32(buff, offset, partition.partition);
-			const messageSetSize = this.getMessageSetSize(partition.messages);
-			offset = this.writeInt32(buff, offset, messageSetSize);
-			offset = this.writeMessageSet(buff, offset, partition.messages);
-		});
-		return offset;
-	}
-
-	writeMessageSet(buff, offset, messages) {
-
+	//@TODO make message and messageSet independant with their own methods and schema
+	writeMessageSet(buff, messages, offset) {
+		const messageSetSize = this.getMessageSetSize(messages);
+		this.offset = this.writeInt32(this.buff, messageSetSize, this.offset);		
 		messages.forEach((message) => {
-			offset = this.writeInt64(buff, offset, message.offset);
-			const messageSize = this.getMessageSize(message.key, message.value);
-			offset = this.writeInt32(buff, offset, messageSize);
-			offset = this.writeMessage(buff, offset, message.timestamp, message.key, message.value);
+			this.offset = this.writeInt64(this.buff, message.offset, this.offset);
+			const messageSize = this.getMessageSize(message);
+			this.offset = this.writeInt32(this.buff, messageSize, this.offset);
+			this.offset = this.writeMessage(this.buff, message, this.offset);
 		});
-
-		return offset;
+		return this.offset;
 	}
 
-	writeMessage(buff, offset, timestamp, key, value) {
-		const messageSize = this.getMessageSize(key, value);
+	writeMessage(buff, message, offset) {
+		const messageSize = this.getMessageSize(message);
 		const msg = Buffer.alloc(messageSize - 4);
 		let msgOffset = 0;
-		msgOffset = this.writeInt8(msg, msgOffset, MAGIC_BYTE);
-		msgOffset = this.writeInt8(msg, msgOffset, 0);
-		msgOffset = this.writeInt64(msg, msgOffset, timestamp);
-		msgOffset = this.writeBytes(msg, msgOffset, key);
-		msgOffset = this.writeBytes(msg, msgOffset, value);
+		msgOffset = this.writeInt8(msg, MAGIC_BYTE, msgOffset);
+		msgOffset = this.writeInt8(msg, 0, msgOffset);
+		msgOffset = this.writeInt64(msg, message.timestamp, msgOffset);
+		msgOffset = this.writeBytes(msg, message.key, msgOffset);
+		msgOffset = this.writeBytes(msg, message.value, msgOffset);
 
 		const msgCrc = crc32.buf(msg);
-		offset = this.writeInt32(buff, offset, msgCrc);
-		offset += msg.copy(buff, offset, 0, msg.length);
-		return offset;
+		this.offset = this.writeInt32(this.buff, msgCrc, this.offset);
+		this.offset += msg.copy(this.buff, this.offset, 0, msg.length);
+		return this.offset;
 	}
 
-	getSize(payload) {
-		const topicArraySize = _.reduce(payload, (memo, topic) => {
-
-			const partitionsArraySize = _.reduce(topic.partitions, (memo, partition) => {
-				// partition as int32 + messagetSetSize as int32 + messageSetSize
-				return memo + 4 + 4 + this.getMessageSetSize(partition.messages);
-			}, 0);
-
-			// topicName as string + partitionsArraySize as int32 + partitionsArraySize 
-			return memo + (2 + topic.topic.length) + 4 + partitionsArraySize;
-		}, 0);
-
-		// requiredAcks as int16 + timeout as int32 + topicArraySize as int32 + topicArraySize
-		return 2 + 4 + 4 + topicArraySize;
-	}
-
-	getMessageSize(key, value) {
+	getMessageSize(message) {
 		// crc as int32 + magicByte as int8 + attributes as int8 + timestamp as int64 + key as bytes + value as bytes 
-		return 4 + 1 + 1 + 8 + (4 + key.length) + (4 + value.length);		
+		return 4 + 1 + 1 + 8 + (4 + message.key.length) + (4 + message.value.length);		
 	}
 
 	getMessageSetSize(messages) {
 		return _.reduce(messages, (memo, message) => { 
 			// offset as int64 + message size as int32 + message size    
-			return memo + 8 + 4 + this.getMessageSize(message.key, message.value);			
+			return memo + 8 + 4 + this.getMessageSize(message);			
 		}, 0);
 	}
 
