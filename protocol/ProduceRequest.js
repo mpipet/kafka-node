@@ -14,6 +14,7 @@ const schema = {
 			topic: 'string',
 			partitions: {
 				Array: {
+					//@TODO use documentation field names from http://kafka.apache.org/protocol.html#protocol_common
 					partition: 'int32',
 					//@TODO remove size from schema
 					size: 'int32',

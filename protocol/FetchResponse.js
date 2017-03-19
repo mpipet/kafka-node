@@ -1,50 +1,43 @@
 const _ = require('underscore');
 const Response = require('./Response');
 
-const printHex = function(buff, offset) {
-	console.log(offset.toString() + ': ' + buff.toString('hex'));
-};
+const schema = {
+	throttle_time_ms: 'int32',
+	responses: {
+		Array: {
+			topic: 'string',
+			partition_responses: {
+				Array: {
+					partition_header: {
+						partition: 'int32',
+				        error_code: 'int16',
+				        high_watermark: 'int64',
+					},
+					record_set: 'RecordSet'
+				}
+
+			}
+		}
+	}
+}
 
 class FetchResponse extends Response {	
-	read() {
-		return {
-			correlationId: this.readInt32(),
-			throttleTime: this.readInt32(),
-			topics: this.readTopics(),			
-		};
+
+	constructor(buff) {
+		super(buff)
+		const headerSchema = {
+			correlation_id: 'int32',
+		}
+		this.schema = _.extend(headerSchema, schema);
 	}
 
-	readTopics() {
-		const count = this.readInt32();
-		const topics = [];
-		_.range(count).forEach(() => {			
-			const topic = {
-				topicName: this.readString(),
-				partitions: this.readPartitions()		 							
-			};			
-			topics.push(topic);
-		});
-		return topics;
-	}
-
-	readPartitions() {
-		const count = this.readInt32();
-		const partitions = [];
-		_.range(count).forEach(() => {			
-
-			const partition = {
-				partition: this.readInt32(),
-				erroCode: this.readInt16(),
-				highwaterMarkOffset: this.readInt64(),
-			};			
-			partition.messageSetSize = this.readInt32();
-			partition.messageSet = this.readMessageSet(partition.messageSetSize + this.offset);		 							
-			partitions.push(partition);
-		});
-		return partitions;	
+	readRecordSet() {
+		const size = this.readInt32();
+		return this.readMessageSet(size + this.offset);
 	}
 
 	readMessageSet(offsetLimit) {
+		
 		const messageSets = [];
 		while(this.offset < offsetLimit) {
 			const messageSet = {

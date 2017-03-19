@@ -1,43 +1,29 @@
 const _ = require('underscore');
 const Response = require('./Response');
 
+const schema = {
+	responses: {
+		Array: {
+			topic: 'string',
+			partition_responses: {
+				partition: 'int32',
+				error_code: 'int16',
+				base_offset: 'int64',
+				log_append_time: 'int64',
+			}
+		}
+	},
+	throttle_time_ms: 'int32'
+}
+
 class ProduceResponse extends Response {
 
-	read() {		
-		return {
-			correlationId: this.readInt32(),
-			topics: this.readTopics(),
-			throttleTime: this.readInt32()
-		};
-	}
-
-	readTopics() {
-		const count = this.readInt32();
-		const topics = [];
-		_.range(count).forEach(() => {			
-			const topic = {
-				topic: this.readString(),
-				partitions: this.readPartitions()
-			};
-			topics.push(topic);
-		});
-		return topics;
-	}
-
-	readPartitions() {
-		const count = this.readInt32();
-		const partitions = [];
-		_.range(count).forEach(() => {			
-			const partition = {
-				partition: this.readInt32(),			
-				errorCode: this.readInt16(),
-				offset: this.readInt64(),
-				timestamp: this.readInt64()
-			};
-			partitions.push(partition);
-		});
-
-		return partitions;
+	constructor(buff) {
+		super(buff)
+		const headerSchema = {
+			correlation_id: 'int32',
+		}
+		this.schema = _.extend(headerSchema, schema);
 	}
 }
 

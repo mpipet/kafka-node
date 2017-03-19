@@ -7,7 +7,55 @@ class Response {
 		this.offset = 0;
 	}	
 
-	readIntBoolean() {		
+	read() {
+		// console.log(this.schema)
+		return this.decodeBuffer(this.schema, {});
+	}
+
+	decodeBuffer(schem, data) {
+		Object.keys(schem).forEach((key) => {
+			// console.log(key)
+			if (key === 'Array' && schem[key].constructor === Object) {
+				const size = this.decodeData('Array');
+				// console.log(size)
+				const structArray = [];
+				_.range(size).forEach((elem) => {
+					structArray.push(this.decodeBuffer(schem[key], {}));
+				});
+				data = structArray;
+				return;
+			}
+
+			// // Schema describes an Array of primitives
+			if (key === 'Array' && schem[key].constructor === String) {
+				const size = this.decodeData('Array');
+				const primitiveArray = [];
+				_.range(size).forEach((elem) => {
+					primitiveArray.push(this.decodeData(schem[key]));
+				});
+				data = primitiveArray;
+				return;
+			}
+
+			// Schema describes a structure
+			if (schem[key].constructor === Object) {
+				data[key] = this.decodeBuffer(schem[key], {});
+				return;
+			}
+			
+			// Schema describes a primitive
+			data[key] = this.decodeData(schem[key]);
+			
+		});
+		return data;
+	}
+
+	decodeData(type) {
+		const decodeFunc = 'read'+ type.charAt(0).toUpperCase() + type.slice(1);
+		return this[decodeFunc]();
+	}
+
+	readBoolean() {		
 		const integer = this.buff.readIntBE(this.offset, 1);
 		this.offset += 1;
 		return Boolean(integer);
@@ -37,23 +85,21 @@ class Response {
 		return integer;
 	}
 
-	readInt32Array() {
+	readArray() {
 		const size = this.buff.readIntBE(this.offset, 4);
 		this.offset += 4;
-		const array = [];
-		_.range(size).forEach((index) => {
-			array.push(this.buff.readIntBE(this.offset, 4));
-			this.offset += 4;
-		});
-
-		return array;
+		return size;
 	}
 
 	readString() {
 		const size = this.buff.readIntBE(this.offset, 2);
 		this.offset += 2;
-		const string = this.buff.toString('utf-8', this.offset, this.offset + size);
-		this.offset += size;
+
+		let string = '';
+		if (size > 0) {
+			string = this.buff.toString('utf-8', this.offset, this.offset + size);
+			this.offset += size;			
+		}
 		return string;
 	}
 

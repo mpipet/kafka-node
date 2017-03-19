@@ -13,13 +13,6 @@ const payload = {
 	]
 };
 
-// const produceRequest = new ProduceRequest(payload, cst.API_VERSION, correlationId, cst.CLIENT_ID);
-// const size = produceRequest.getSize(payload);
-// const requestPayload = produceRequest.getRequestPayload(size, payload);
-// const buff = Buffer.alloc(size);
-// const offset = produceRequest.write(buff, requestPayload, 0);
-
-
 const metadataRequest = new MetadataRequest(cst.API_VERSION, correlationId, cst.CLIENT_ID);
 const size = metadataRequest.getSize(payload);
 const requestPayload = metadataRequest.getRequestPayload(size, payload);

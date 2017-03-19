@@ -6,7 +6,7 @@ const ProduceRequest = require('../../protocol/ProduceRequest');
 
 
 const payload ={
-	acks: 1,
+	acks: -1,
 	timeout: 1000,
 	topics: [
 		{

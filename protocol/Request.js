@@ -41,15 +41,6 @@ class Request {
 			clientId: clientId,			
 		};
 		this.headerPayload = headerPayload;
-		// this.fullPayload = _.extend(headerPayload, payload);
-
-		//Compute size from schema and payload
-		// const size = this.getSize();
-
-		// Prefill the request size element
-		// this.fullPayload.size = size - 4; 
-
-		
 	}
 
 	getSize(messagePayload) {
