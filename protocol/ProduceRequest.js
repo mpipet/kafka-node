@@ -27,21 +27,21 @@ const schema = {
 
 class ProduceRequest extends Request {
 
-	constructor(payload, apiVersion, correlationId, clientId) {
-		super(schema, cst.PRODUCE_REQUEST, payload, apiVersion, correlationId, clientId);
+	constructor(apiVersion, correlationId, clientId) {
+		super(schema, cst.PRODUCE_REQUEST, apiVersion, correlationId, clientId);
 	}
 
 	//@TODO make message and messageSet independant with their own methods and schema
 	writeMessageSet(buff, messages, offset) {
 		const messageSetSize = this.getMessageSetSize(messages);
-		this.offset = this.writeInt32(this.buff, messageSetSize, this.offset);		
+		offset = this.writeInt32(buff, messageSetSize, offset);		
 		messages.forEach((message) => {
-			this.offset = this.writeInt64(this.buff, message.offset, this.offset);
+			offset = this.writeInt64(buff, message.offset, offset);
 			const messageSize = this.getMessageSize(message);
-			this.offset = this.writeInt32(this.buff, messageSize, this.offset);
-			this.offset = this.writeMessage(this.buff, message, this.offset);
+			offset = this.writeInt32(buff, messageSize, offset);
+			offset = this.writeMessage(buff, message, offset);
 		});
-		return this.offset;
+		return offset;
 	}
 
 	writeMessage(buff, message, offset) {
@@ -55,9 +55,9 @@ class ProduceRequest extends Request {
 		msgOffset = this.writeBytes(msg, message.value, msgOffset);
 
 		const msgCrc = crc32.buf(msg);
-		this.offset = this.writeInt32(this.buff, msgCrc, this.offset);
-		this.offset += msg.copy(this.buff, this.offset, 0, msg.length);
-		return this.offset;
+		offset = this.writeInt32(buff, msgCrc, offset);
+		offset += msg.copy(buff, offset, 0, msg.length);
+		return offset;
 	}
 
 	getMessageSize(message) {

@@ -13,13 +13,22 @@ const payload = {
 	]
 };
 
-const metadataRequest = new MetadataRequest(payload, cst.API_VERSION, correlationId, cst.CLIENT_ID);
+// const produceRequest = new ProduceRequest(payload, cst.API_VERSION, correlationId, cst.CLIENT_ID);
+// const size = produceRequest.getSize(payload);
+// const requestPayload = produceRequest.getRequestPayload(size, payload);
+// const buff = Buffer.alloc(size);
+// const offset = produceRequest.write(buff, requestPayload, 0);
 
-metadataRequest.writeRequestMessage();
+
+const metadataRequest = new MetadataRequest(cst.API_VERSION, correlationId, cst.CLIENT_ID);
+const size = metadataRequest.getSize(payload);
+const requestPayload = metadataRequest.getRequestPayload(size, payload);
+const buff = Buffer.alloc(size);
+const offset = metadataRequest.write(buff, requestPayload, 0);
 
 const client = new Client();
 client.connect(() => {
-	client.send(metadataRequest.buff);
+	client.send(buff);
 });
 
 client.on('response', (response) => {

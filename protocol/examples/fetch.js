@@ -4,10 +4,6 @@ const cst = require('../../protocol/constants');
 const FetchResponse = require('../../protocol/FetchResponse');
 const FetchRequest = require('../../protocol/FetchRequest');
 
-const printHex = function(buff, offset) {
-	console.log(offset.toString() + ': ' + buff.toString('hex'));
-};
-
 const payload = {
 	replica_id: -1,
   	max_wait_time: 10,
@@ -27,13 +23,16 @@ const payload = {
 };
 
 const correlationId = 666;
-const fetchRequest = new FetchRequest(payload, cst.API_VERSION, correlationId, cst.CLIENT_ID);
 
-fetchRequest.writeRequestMessage();
+const fetchRequest = new FetchRequest(cst.API_VERSION, correlationId, cst.CLIENT_ID);
+const size = fetchRequest.getSize(payload);
+const requestPayload = fetchRequest.getRequestPayload(size, payload);
+const buff = Buffer.alloc(size);
+const offset = fetchRequest.write(buff, requestPayload, 0);
 
 const client = new Client();
 client.connect(() => {
-	client.send(fetchRequest.buff);
+	client.send(buff);
 });
 
 client.on('response', (response) => {

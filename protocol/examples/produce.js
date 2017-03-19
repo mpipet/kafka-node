@@ -41,21 +41,23 @@ const payload ={
 	]
 };
 
-const requiredAcks = 1;
 const correlationId = 666;
 
-const produceRequest = new ProduceRequest(payload, cst.API_VERSION, correlationId, cst.CLIENT_ID);
-produceRequest.writeRequestMessage();
+const produceRequest = new ProduceRequest(cst.API_VERSION, correlationId, cst.CLIENT_ID);
+const size = produceRequest.getSize(payload);
+const requestPayload = produceRequest.getRequestPayload(size, payload);
+const buff = Buffer.alloc(size);
+const offset = produceRequest.write(buff, requestPayload, 0);
 
 const client = new Client();
 client.connect(() => {
-	client.send(produceRequest.buff);
+	client.send(buff);
 });
 
 client.on('response', (response) => {
 	const produceResponse = new ProduceResponse(response);
 	const data = produceResponse.read();
-	console.log(JSON.stringify(data));	
+	console.log(JSON.stringify(data));
 	client.close();
 
 });

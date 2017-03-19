@@ -33,8 +33,8 @@ var schema = {
 
 };*/
 class MetadataRequest extends Request {
-	constructor(payload, apiVersion, correlationId, clientId) {
-		super(schema, cst.METADATA_REQUEST, payload, apiVersion, correlationId, clientId);
+	constructor(apiVersion, correlationId, clientId) {
+		super(schema, cst.METADATA_REQUEST, apiVersion, correlationId, clientId);
 	}
 }
 

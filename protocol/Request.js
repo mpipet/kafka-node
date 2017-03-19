@@ -21,11 +21,14 @@ const RequestHeader = {
 	clientId: 'string',
 }
 
+const INT8_SIZE = 1;
+const INT16_SIZE = 2;
+const INT32_SIZE = 4;
+const INT64_SIZE = 8;
+
 class Request {
 
-	constructor(requestSchema, apiKey, payload, apiVersion, correlationId, clientId) {
-		this.offset = 0;
-
+	constructor(requestSchema, apiKey, apiVersion, correlationId, clientId) {
 		// Add request schema to request headers
 		this.schema = _.extend(schema, requestSchema);
 
@@ -37,109 +40,158 @@ class Request {
 			correlationId: correlationId,
 			clientId: clientId,			
 		};
-		this.fullPayload = _.extend(headerPayload, payload);
+		this.headerPayload = headerPayload;
+		// this.fullPayload = _.extend(headerPayload, payload);
 
 		//Compute size from schema and payload
-		this.size = 0;
-		this.getSize();
+		// const size = this.getSize();
 
 		// Prefill the request size element
-		this.fullPayload.size = this.size - 4; 
+		// this.fullPayload.size = size - 4; 
 
-		this.buff = Buffer.alloc(this.size);
+		
 	}
 
-	parse(schem, payload, handle) {
+	getSize(messagePayload) {
+		let size = 0;
+		const fullPayload = _.extend(this.headerPayload, messagePayload);
+
+		size = this.computeSize(this.schema, fullPayload, size);
+		return size;
+	}
+
+	getRequestPayload(size, messagePayload) {
+		const fullPayload = _.extend(this.headerPayload, messagePayload);
+
+		//Feed request ack size with the right value
+		fullPayload.size = size - INT32_SIZE;
+		return fullPayload;
+	}
+
+	write(buffer, requestPayload, offset) {
+		this.encodeToBuffer(buffer, this.schema, requestPayload, offset);
+		return buffer;
+	}
+
+	computeSize(schem, payload, size) {
 		Object.keys(schem).forEach((key) => {
 			// Schema describes an Array of structure
 			if (key === 'Array' && schem[key].constructor === Object) {
-				handle(payload, 'Array');
+				size = this.getDataSize(payload, 'Array', size);
 				payload.forEach((elem) => {
-					this.parse(schem[key], elem, handle);
+					size = this.computeSize(schem[key], elem, size);
 				});
 				return;
 			}
 
 			// Schema describes an Array of primitives
 			if (key === 'Array' && schem[key].constructor === String) {
-				handle(payload, 'Array');
+				size = this.getDataSize(payload, 'Array', size);
 				payload.forEach((elem) => {
-					handle(elem, schem[key]);
+					size = this.getDataSize(elem, schem[key], size);
 				});
 				return;
 			}
 
 			// Schema describes a structure
 			if (schem[key].constructor === Object) {
-				this.parse(schem[key], payload[key], handle);
+				size = this.computeSize(schem[key], payload[key], size);
 				return;
 			}
 			
 			// Schema describes a primitive
-			handle(payload[key], schem[key]);
+			size = this.getDataSize(payload[key], schem[key], size);
 			
 		});
+		return size;
 	}
 
-	//@TODO EURK get rid of thoses two methods as they are now
-	//@TODO Rename for better consistency and return written buffer
-	writeRequestMessage() {
-		this.parse(
-		 	this.schema,
-		 	this.fullPayload,
-		 	(data, type) => {this.writeData(data, type)}
-	 	);
-	}
+	encodeToBuffer(buffer, schem, payload, offset) {
+		Object.keys(schem).forEach((key) => {
+			// Schema describes an Array of structure
+			if (key === 'Array' && schem[key].constructor === Object) {
+				offset = this.writeData(buffer, payload, 'Array', offset);
+				payload.forEach((elem) => {
+					offset = this.encodeToBuffer(buffer, schem[key], elem, offset);
+				});
+				return;
+			}
 
-	getSize() {
-		return this.parse(
-			this.schema,
-			this.fullPayload,
-			(data, type) => { return this.getDataSize(data, type) }
-		);
+			// Schema describes an Array of primitives
+			if (key === 'Array' && schem[key].constructor === String) {
+				offset = this.writeData(buffer, payload, 'Array', offset);
+				payload.forEach((elem) => {
+					offset = this.writeData(buffer, elem, schem[key], offset);
+				});
+				return;
+			}
+
+			// Schema describes a structure
+			if (schem[key].constructor === Object) {
+				offset = this.encodeToBuffer(buffer, schem[key], payload[key], offset);
+				return;
+			}
+			
+			// Schema describes a primitive
+			offset = this.writeData(buffer, payload[key], schem[key], offset);
+			
+		});
+		return offset;
 	}
 
 	//@TODO Rename thoses two methods
-	getDataSize(data, type) {
+	getDataSize(data, type, size) {
 		const sizeFunc = 'get'+ type.charAt(0).toUpperCase() + type.slice(1) + 'Size';
-		this.size += this[sizeFunc](data); 
+		size += this[sizeFunc](data);
+		return size;
 	}
 
-	writeData(data, type) {
+	writeData(buffer, data, type, offset) {
 		//@TODO when schema size issue is fixed, remove this silly condition
 		if (typeof data !== 'undefined') {
 			const writeFunc = 'write'+ type.charAt(0).toUpperCase() + type.slice(1);
-			this.offset = this[writeFunc](this.buff, data, this.offset);
+			offset = this[writeFunc](buffer, data, offset);
 		}
+
+		return offset;
 	}	
 
-	// Use consts for sizes
-	getInt32Size(data) {
-		return 4;
-	}	
-
-	getInt64Size(data) {
-		return 8;
+	/*
+	 * primitives size getters
+	 */
+	getInt8Size(data) {
+		return INT8_SIZE;
 	}
 
 	getInt16Size(data) {
-		return 2;
+		return INT16_SIZE;
+	}
+
+	getInt32Size(data) {
+		return INT32_SIZE;
+	}	
+
+	getInt64Size(data) {
+		return INT64_SIZE;
 	}
 
 	getArraySize(data) {
-		return 4;
+		return INT32_SIZE;
 	}
 
 	getBytesSize(data) {
-		return 4 + data.length;
+		return INT32_SIZE + data.length;
 	}
 
 	getStringSize(data) {
-		return 2 + data.length;
+		return INT16_SIZE + data.length;
 	}
 
+	/*
+	 * primitives writters
+	 */
 	writeInt8(buff, integer, offset) {
-		return buff.writeIntBE(integer, offset, 1);
+		return buff.writeIntBE(integer, offset, INT8_SIZE);
 	}
 
 	writeInt16(buff, integer, offset) {
@@ -151,7 +203,7 @@ class Request {
 	}
 
 	writeInt64(buff, integer, offset) {
-		return buff.writeIntBE(integer, offset, 8);
+		return buff.writeIntBE(integer, offset, INT64_SIZE);
 	}
 
 	writeArray(buff, array, offset) {

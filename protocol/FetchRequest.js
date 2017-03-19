@@ -23,8 +23,8 @@ const schema = {
 
 class FetchRequest extends Request {
 
-	constructor(payload, apiVersion, correlationId, clientId) {
-		super(schema, cst.FETCH_REQUEST, payload, apiVersion, correlationId, clientId);
+	constructor(apiVersion, correlationId, clientId) {
+		super(schema, cst.FETCH_REQUEST, apiVersion, correlationId, clientId);
 	}
 }
 
