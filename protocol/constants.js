@@ -3,8 +3,9 @@ module.exports = {
 
 	API_VERSION: 2,
 
-	PRODUCE_REQUEST: 0,
-	FETCH_REQUEST: 1,
-	METADATA_REQUEST: 3,
+	PRODUCE: 0,
+	FETCH: 1,
+	OFFSETS: 2,
+	METADATA: 3,
 
 };

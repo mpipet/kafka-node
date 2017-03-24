@@ -1,10 +1,17 @@
 const _ = require('underscore');
 
+const schemas = require('./schemas');
+
 class Response {
 
-	constructor(buff) {
+	constructor(buff, apiKey, apiVersion) {
 		this.buff = buff;
 		this.offset = 0;
+
+		const headerSchema = {
+			correlation_id: 'int32',
+		}
+		this.schema = _.extend(headerSchema, schemas[apiKey].response[apiVersion]);
 	}	
 
 	read() {
@@ -13,6 +20,7 @@ class Response {
 
 	decodeBuffer(schem, data) {
 		Object.keys(schem).forEach((key) => {
+
 			if (key === 'Array' && schem[key].constructor === Object) {
 				const size = this.decodeData('Array');
 				const structArray = [];
@@ -68,7 +76,6 @@ class Response {
 			
 			// Schema describes a primitive
 			data[key] = this.decodeData(schem[key]);
-			console.log(key, data[key])
 			
 		});
 		return data;

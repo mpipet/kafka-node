@@ -1,11 +1,12 @@
 const _ = require('underscore');
 const crc32 = require('crc-32');
+const schemas = require('./schemas');
 
 const schema = {
 	Size: {
-		apiKey: 'int16',
-		apiVersion: 'int16',
-		correlationId: 'int32',
+		api_key: 'int16',
+		api_version: 'int16',
+		correlation_id: 'int32',
 		clientId: 'string',		
 	}
 };
@@ -17,17 +18,17 @@ const INT64_SIZE = 8;
 
 class Request {
 
-	constructor(requestSchema, apiKey, apiVersion, correlationId, clientId) {
+	constructor(apiKey, apiVersion, clientId) {
 		// Add request schema to request headers
 		this.schema = {
-			Size: _.extend(schema.Size, requestSchema)
+			Size: _.extend(schema.Size, schemas[apiKey].request[apiVersion])
 		};
-
+		
 		// add request payload to header payload
 		const headerPayload = {
-			apiKey: apiKey,
-			apiVersion: apiVersion,
-			correlationId: correlationId,
+			api_key: apiKey,
+			api_version: apiVersion,
+			correlation_id: 0,
 			clientId: clientId,			
 		};
 		this.headerPayload = headerPayload;
@@ -41,7 +42,8 @@ class Request {
 		return size;
 	}
 
-	getRequestPayload(size, messagePayload) {
+	getRequestPayload(messagePayload, correlationId) {
+		this.headerPayload.correlation_id = correlationId;
 		const fullPayload = _.extend(this.headerPayload, messagePayload);
 		return fullPayload;
 	}

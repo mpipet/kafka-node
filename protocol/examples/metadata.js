@@ -1,8 +1,8 @@
 const Client = require('../../Client');
 
 const cst = require('../../protocol/constants');
-const MetadataResponse = require('../../protocol/MetadataResponse');
-const MetadataRequest = require('../../protocol/MetadataRequest');
+const Response = require('../../protocol/Response');
+const Request = require('../../protocol/Request');
 
 const correlationId = 666;
 
@@ -13,9 +13,10 @@ const payload = {
 	]
 };
 
-const metadataRequest = new MetadataRequest(cst.API_VERSION, correlationId, cst.CLIENT_ID);
+const metadataRequest = new Request(cst.METADATA, cst.API_VERSION, cst.CLIENT_ID);
+const requestPayload = metadataRequest.getRequestPayload(payload, correlationId);
+
 const size = metadataRequest.getSize(payload);
-const requestPayload = metadataRequest.getRequestPayload(size, payload);
 const buff = Buffer.alloc(size);
 const offset = metadataRequest.write(buff, requestPayload, 0);
 
@@ -24,8 +25,8 @@ client.connect(() => {
 	client.send(buff);
 });
 
-client.on('response', (response) => {
-	const metadataResponse = new MetadataResponse(response);
+client.on('response', (buff) => {
+	const metadataResponse = new Response(buff, cst.METADATA, cst.API_VERSION);
 	const data = metadataResponse.read();
 	console.log(JSON.stringify(data, null, 2));	
 	client.close();

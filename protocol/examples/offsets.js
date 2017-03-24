@@ -6,16 +6,17 @@ const Request = require('../../protocol/Request');
 
 const payload = {
 	replica_id: -1,
-  	max_wait_time: 10,
-  	min_bytes: 10,
 	topics: [
 		{
 			topic: 'test',
 			partitions: [
 				{
+					partition: 0,
+					timestamp: -1
+				},
+				{
 					partition: 1,
-					fetch_offset: 0,
-					max_bytes: 300000,
+					timestamp: -1
 				}
 			]
 		}
@@ -24,12 +25,14 @@ const payload = {
 
 const correlationId = 666;
 
-const fetchRequest = new Request(cst.FETCH, cst.API_VERSION, cst.CLIENT_ID);
-const requestPayload = fetchRequest.getRequestPayload(payload, correlationId);
+const request = new Request(cst.OFFSETS, 1, cst.CLIENT_ID);
+const requestPayload = request.getRequestPayload(payload, correlationId);
 
-const size = fetchRequest.getSize(payload);
+const size = request.getSize(payload);
 const buff = Buffer.alloc(size);
-const offset = fetchRequest.write(buff, requestPayload, 0);
+const offset = request.write(buff, requestPayload, 0);
+
+console.log(buff.toString('hex'))
 
 const client = new Client();
 client.connect(() => {
@@ -37,9 +40,10 @@ client.connect(() => {
 });
 
 client.on('response', (buff) => {
-	const fetchResponse = new Response(buff, cst.FETCH, cst.API_VERSION);
-	const data = fetchResponse.read();
-	console.log(JSON.stringify(data, null, 2));	
+console.log(buff.toString('hex'))
+	const response = new Response(buff, cst.OFFSETS, 1);
+	const data = response.read();
+	console.log(JSON.stringify(data, null, 2));
 	client.close();
 
 });
