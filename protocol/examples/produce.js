@@ -8,27 +8,31 @@ const ProduceRequest = require('../../protocol/ProduceRequest');
 const payload ={
 	acks: -1,
 	timeout: 1000,
-	topics: [
+	topic_data: [
 		{
-			topic: 'live2',
-			partitions: [
+			topic: 'test',
+			data: [
 				{
 					partition: 1,
-					messages: [
+					record_set: [
 						{
 							'offset': 0,
-							'timestamp': 1487542182,
+							'magic_byte': 1,
+							'attributes': 0,
+							'timestamp': Date.now() / 1000 | 0,
 							'key': 'erg',
 							'value': 'loooolfzefzefzfzf'		
 						}
 					]
 				},
 				{
-					partition: 2,
-					messages: [
+					partition: 0,
+					record_set: [
 						{
-							'offset': 0,
-							'timestamp': 1487542182,
+							'offset': 2,
+							'magic_byte': 1,
+							'attributes': 0,
+							'timestamp': Date.now() / 1000 | 0,
 							'key': 'ergree',
 							'value': 'gegrr'		
 						}

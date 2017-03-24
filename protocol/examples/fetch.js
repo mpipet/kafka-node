@@ -10,11 +10,11 @@ const payload = {
   	min_bytes: 10,
 	topics: [
 		{
-			topic: 'live2',
+			topic: 'test',
 			partitions: [
 				{
 					partition: 1,
-					fetch_offset: 360,
+					fetch_offset: 20,
 					max_bytes: 300000,
 				}
 			]
@@ -36,6 +36,7 @@ client.connect(() => {
 });
 
 client.on('response', (response) => {
+	console.log(response.toString('hex'))
 	const fetchResponse = new FetchResponse(response);
 	const data = fetchResponse.read();
 	console.log(JSON.stringify(data));	

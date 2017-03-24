@@ -8,7 +8,7 @@ const correlationId = 666;
 
 const payload = {
 	topics: [
-		'live',
+		'test',
 		'live2'
 	]
 };

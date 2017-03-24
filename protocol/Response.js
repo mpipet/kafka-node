@@ -8,16 +8,13 @@ class Response {
 	}	
 
 	read() {
-		// console.log(this.schema)
 		return this.decodeBuffer(this.schema, {});
 	}
 
 	decodeBuffer(schem, data) {
 		Object.keys(schem).forEach((key) => {
-			// console.log(key)
 			if (key === 'Array' && schem[key].constructor === Object) {
 				const size = this.decodeData('Array');
-				// console.log(size)
 				const structArray = [];
 				_.range(size).forEach((elem) => {
 					structArray.push(this.decodeBuffer(schem[key], {}));
@@ -34,6 +31,32 @@ class Response {
 					primitiveArray.push(this.decodeData(schem[key]));
 				});
 				data = primitiveArray;
+				return;
+			}
+
+			// Schema describes Size of a structure
+			if (key === 'Size' && schem[key].constructor === Object) {
+				this.decodeData('int32');
+				data = this.decodeBuffer(schem[key], {});
+				return;
+			}
+
+			// Schema describes an Array with no array size but a buffer size
+			if (key === 'Batch' && schem[key].constructor === Object) {
+				const size = this.decodeData('int32');
+				const batchOffsetStart = this.offset;
+				const structArray = [];
+				while(this.offset < batchOffsetStart + size) {
+					structArray.push(this.decodeBuffer(schem[key], {}));
+				}
+				data = structArray;
+				return;
+			}
+
+			// Schema describes Crc32 of a structure
+			if (key === 'Crc' && schem[key].constructor === Object) {
+				this.decodeData('int32');
+				data = this.decodeBuffer(schem[key], {});
 				return;
 			}
 
@@ -106,8 +129,12 @@ class Response {
 	readBytes() {
 		const size = this.buff.readIntBE(this.offset, 4);
 		this.offset += 4;
-		const string = this.buff.toString('utf-8', this.offset, this.offset + size);
-		this.offset += size;
+
+		let string = '';
+		if (size > 0) {
+			string = this.buff.toString('utf-8', this.offset, this.offset + size);
+			this.offset += size;			
+		}
 		return string;
 	}
 }

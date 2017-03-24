@@ -1,25 +1,14 @@
 const _ = require('underscore');
+const crc32 = require('crc-32');
 
 const schema = {
-	size: 'int32',
-	apiKey: 'int16',
-	apiVersion: 'int16',
-	correlationId: 'int32',
-	clientId: 'string',
+	Size: {
+		apiKey: 'int16',
+		apiVersion: 'int16',
+		correlationId: 'int32',
+		clientId: 'string',		
+	}
 };
-
-//@TODO find a solution to precompute size of schema sub elements
-//@TODO Use the two following schema declaration instead
-const RequestOrResponse = {
-	size: 'int32'
-}
-
-const RequestHeader = {
-	apiKey: 'int16',
-	apiVersion: 'int16',
-	correlationId: 'int32',
-	clientId: 'string',
-}
 
 const INT8_SIZE = 1;
 const INT16_SIZE = 2;
@@ -30,11 +19,12 @@ class Request {
 
 	constructor(requestSchema, apiKey, apiVersion, correlationId, clientId) {
 		// Add request schema to request headers
-		this.schema = _.extend(schema, requestSchema);
+		this.schema = {
+			Size: _.extend(schema.Size, requestSchema)
+		};
 
 		// add request payload to header payload
 		const headerPayload = {
-			size: 0,
 			apiKey: apiKey,
 			apiVersion: apiVersion,
 			correlationId: correlationId,
@@ -53,9 +43,6 @@ class Request {
 
 	getRequestPayload(size, messagePayload) {
 		const fullPayload = _.extend(this.headerPayload, messagePayload);
-
-		//Feed request ack size with the right value
-		fullPayload.size = size - INT32_SIZE;
 		return fullPayload;
 	}
 
@@ -66,6 +53,31 @@ class Request {
 
 	computeSize(schem, payload, size) {
 		Object.keys(schem).forEach((key) => {
+
+			// Schema describes Size of a structure
+			if (key === 'Size' && schem[key].constructor === Object) {
+				size = this.getDataSize(payload, 'int32', size);
+				size = this.computeSize(schem[key], payload, size);								
+				return;
+			}
+
+			// Schema describes an Array with no array size but a buffer size
+			if (key === 'Batch' && schem[key].constructor === Object) {
+				size = this.getDataSize(payload, 'int32', size);
+				payload.forEach((elem) => {
+					size = this.computeSize(schem[key], elem, size);
+				});
+				return;
+			}
+
+			// Schema describes Crc32 of a structure
+			if (key === 'Crc' && schem[key].constructor === Object) {
+				size = this.getDataSize(payload, 'int32', size);
+				size = this.computeSize(schem[key], payload, size);
+				return;
+			}
+
+
 			// Schema describes an Array of structure
 			if (key === 'Array' && schem[key].constructor === Object) {
 				size = this.getDataSize(payload, 'Array', size);
@@ -99,6 +111,62 @@ class Request {
 
 	encodeToBuffer(buffer, schem, payload, offset) {
 		Object.keys(schem).forEach((key) => {
+
+			// Schema describes Size of a structure
+			if (key === 'Size' && schem[key].constructor === Object) {
+				const sizeOffset = offset;
+				offset += INT32_SIZE; 
+				offset = this.encodeToBuffer(buffer, schem[key], payload, offset);
+				const size = offset - sizeOffset - INT32_SIZE;
+				this.writeInt32(buffer, size, sizeOffset);
+				return;
+			}
+
+			// Schema describes Crc32 of a structure
+			if (key === 'Crc' && schem[key].constructor === Object) {				
+				const crcOffset = offset;
+				offset += INT32_SIZE;
+				offset = this.encodeToBuffer(buffer, schem[key], payload, offset);
+
+				const toCrcBufferLength = offset - crcOffset - INT32_SIZE;
+				const toCrcBuffer = Buffer.alloc(toCrcBufferLength);
+				buffer.copy(toCrcBuffer, 0, crcOffset + INT32_SIZE, crcOffset + INT32_SIZE + toCrcBufferLength);
+
+				const crc = crc32.buf(toCrcBuffer);
+
+				this.writeInt32(buffer, crc, crcOffset);
+				return;
+			}
+
+			// Schema describes an Array with no array size but a buffer size
+			if (key === 'Batch' && schem[key].constructor === Object) {
+				const sizeOffset = offset;
+				offset += INT32_SIZE; 
+				
+				payload.forEach((elem) => {
+					offset = this.encodeToBuffer(buffer, schem[key], elem, offset);
+				});
+
+				const size = offset - sizeOffset - INT32_SIZE;
+				this.writeInt32(buffer, size, sizeOffset);
+				return;
+			}
+
+			// Schema describes an Array of structure which have no array size
+			if (key === 'Batch' && schem[key].constructor === String) {
+				const sizeOffset = offset;
+				offset += INT32_SIZE; 
+						
+				payload.forEach((elem) => {
+					offset = this.writeData(buffer, elem, schem[key], offset);
+				});
+
+				const size = offset - sizeOffset - INT32_SIZE;
+				this.writeInt32(buffer, size, sizeOffset);
+				return;
+			}
+
+
 			// Schema describes an Array of structure
 			if (key === 'Array' && schem[key].constructor === Object) {
 				offset = this.writeData(buffer, payload, 'Array', offset);
@@ -138,11 +206,8 @@ class Request {
 	}
 
 	writeData(buffer, data, type, offset) {
-		//@TODO when schema size issue is fixed, remove this silly condition
-		if (typeof data !== 'undefined') {
-			const writeFunc = 'write'+ type.charAt(0).toUpperCase() + type.slice(1);
-			offset = this[writeFunc](buffer, data, offset);
-		}
+		const writeFunc = 'write'+ type.charAt(0).toUpperCase() + type.slice(1);
+		offset = this[writeFunc](buffer, data, offset);
 
 		return offset;
 	}	

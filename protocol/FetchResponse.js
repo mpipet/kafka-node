@@ -13,7 +13,20 @@ const schema = {
 				        error_code: 'int16',
 				        high_watermark: 'int64',
 					},
-					record_set: 'RecordSet'
+					record_set: {
+						Batch: {
+							offset: 'int64',
+							Size: {
+								Crc: {
+									magic_byte: 'int8',
+									attributes: 'int8',
+									timestamp: 'int64',
+									key: 'bytes',
+									value: 'bytes'
+								}
+							}
+						}
+					}
 				}
 
 			}
@@ -29,37 +42,6 @@ class FetchResponse extends Response {
 			correlation_id: 'int32',
 		}
 		this.schema = _.extend(headerSchema, schema);
-	}
-
-	readRecordSet() {
-		const size = this.readInt32();
-		return this.readMessageSet(size + this.offset);
-	}
-
-	readMessageSet(offsetLimit) {
-		
-		const messageSets = [];
-		while(this.offset < offsetLimit) {
-			const messageSet = {
-				offset: this.readInt64(),
-				messageSize: this.readInt32(),
-				message: this.readMessage()		 							
-			};	
-			messageSets.push(messageSet);			
-		}
-
-		return messageSets;
-	}
-
-	readMessage() {
-		return {
-			crc: this.readInt32(),
-			magicByte: this.readInt8(),
-			attributes: this.readInt8(),		
-			timestamp: this.readInt64(),
-			key: this.readBytes(),
-			value: this.readBytes(),
-		};
 	}
 
 }

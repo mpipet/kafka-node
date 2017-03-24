@@ -6,10 +6,12 @@ const schema = {
 		Array: {
 			topic: 'string',
 			partition_responses: {
-				partition: 'int32',
-				error_code: 'int16',
-				base_offset: 'int64',
-				log_append_time: 'int64',
+				Array: {					
+					partition: 'int32',
+					error_code: 'int16',
+					base_offset: 'int64',
+					log_append_time: 'int64',
+				}
 			}
 		}
 	},
