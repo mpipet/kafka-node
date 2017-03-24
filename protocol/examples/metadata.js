@@ -27,7 +27,7 @@ client.connect(() => {
 client.on('response', (response) => {
 	const metadataResponse = new MetadataResponse(response);
 	const data = metadataResponse.read();
-	console.log(JSON.stringify(data));	
+	console.log(JSON.stringify(data, null, 2));	
 	client.close();
 
 });

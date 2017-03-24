@@ -61,7 +61,7 @@ client.connect(() => {
 client.on('response', (response) => {
 	const produceResponse = new ProduceResponse(response);
 	const data = produceResponse.read();
-	console.log(JSON.stringify(data));
+	console.log(JSON.stringify(data, null, 2));
 	client.close();
 
 });

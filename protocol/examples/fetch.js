@@ -14,7 +14,7 @@ const payload = {
 			partitions: [
 				{
 					partition: 1,
-					fetch_offset: 20,
+					fetch_offset: 24,
 					max_bytes: 300000,
 				}
 			]
@@ -39,7 +39,7 @@ client.on('response', (response) => {
 	console.log(response.toString('hex'))
 	const fetchResponse = new FetchResponse(response);
 	const data = fetchResponse.read();
-	console.log(JSON.stringify(data));	
+	console.log(JSON.stringify(data, null, 2));	
 	client.close();
 
 });
