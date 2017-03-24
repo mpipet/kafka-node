@@ -5,27 +5,36 @@ const Response = require('../../protocol/Response');
 const Request = require('../../protocol/Request');
 
 const payload = {
-	replica_id: -1,
-	topics: [
+	controller_id: 0,
+  	controller_epoch: 10,
+	partition_states: [
 		{
 			topic: 'test',
-			partitions: [
-				{
-					partition: 0,
-					timestamp: -1
-				},
-				{
-					partition: 1,
-					timestamp: -1
-				}
-			]
+			partition: 0,
+			controller_epoch: 10,
+			leader: 0,
+			leader_epoch: 0,
+			isr: [
+				0
+			],
+			zk_version: 0,
+			replicas: [
+				0
+			],
+		}
+	],
+	live_leaders: [
+		{
+			id: 0,
+			host: '192.168.33.33',
+			port: 2181,
 		}
 	]
 };
 
 const correlationId = 666;
 
-const request = new Request(cst.OFFSETS, 1, cst.CLIENT_ID);
+const request = new Request(cst.LEADER_AND_ISR, 0, cst.CLIENT_ID);
 const requestPayload = request.getRequestPayload(payload, correlationId);
 
 const size = request.getSize(payload);
@@ -38,7 +47,7 @@ client.connect(() => {
 });
 
 client.on('response', (buff) => {
-	const response = new Response(buff, cst.OFFSETS, 1);
+	const response = new Response(buff, cst.LEADER_AND_ISR, 0);
 	const data = response.read();
 	console.log(JSON.stringify(data, null, 2));
 	client.close();

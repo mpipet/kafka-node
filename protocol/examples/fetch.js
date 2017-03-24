@@ -24,7 +24,7 @@ const payload = {
 
 const correlationId = 666;
 
-const fetchRequest = new Request(cst.FETCH, cst.API_VERSION, cst.CLIENT_ID);
+const fetchRequest = new Request(cst.FETCH, 2, cst.CLIENT_ID);
 const requestPayload = fetchRequest.getRequestPayload(payload, correlationId);
 
 const size = fetchRequest.getSize(payload);
@@ -37,7 +37,7 @@ client.connect(() => {
 });
 
 client.on('response', (buff) => {
-	const fetchResponse = new Response(buff, cst.FETCH, cst.API_VERSION);
+	const fetchResponse = new Response(buff, cst.FETCH, 2);
 	const data = fetchResponse.read();
 	console.log(JSON.stringify(data, null, 2));	
 	client.close();

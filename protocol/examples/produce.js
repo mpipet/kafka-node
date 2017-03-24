@@ -47,7 +47,7 @@ const payload ={
 
 const correlationId = 666;
 
-const request = new Request(cst.PRODUCE, cst.API_VERSION, cst.CLIENT_ID);
+const request = new Request(cst.PRODUCE, 2, cst.CLIENT_ID);
 const requestPayload = request.getRequestPayload(payload, correlationId);
 
 const size = request.getSize(payload);
@@ -60,7 +60,7 @@ client.connect(() => {
 });
 
 client.on('response', (buff) => {
-	const response = new Response(buff, cst.PRODUCE, cst.API_VERSION);
+	const response = new Response(buff, cst.PRODUCE, 2);
 	const data = response.read();
 	console.log(JSON.stringify(data, null, 2));
 	client.close();

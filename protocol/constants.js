@@ -7,5 +7,5 @@ module.exports = {
 	FETCH: 1,
 	OFFSETS: 2,
 	METADATA: 3,
-
+	LEADER_AND_ISR: 4,
 };

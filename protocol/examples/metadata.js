@@ -13,7 +13,7 @@ const payload = {
 	]
 };
 
-const metadataRequest = new Request(cst.METADATA, cst.API_VERSION, cst.CLIENT_ID);
+const metadataRequest = new Request(cst.METADATA, 2, cst.CLIENT_ID);
 const requestPayload = metadataRequest.getRequestPayload(payload, correlationId);
 
 const size = metadataRequest.getSize(payload);
@@ -26,7 +26,7 @@ client.connect(() => {
 });
 
 client.on('response', (buff) => {
-	const metadataResponse = new Response(buff, cst.METADATA, cst.API_VERSION);
+	const metadataResponse = new Response(buff, cst.METADATA, 2);
 	const data = metadataResponse.read();
 	console.log(JSON.stringify(data, null, 2));	
 	client.close();
