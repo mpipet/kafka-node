@@ -37,7 +37,7 @@ class Response {
 			// Schema describes Size of a structure
 			if (key === 'Size' && schem[key].constructor === Object) {
 				this.decodeData('int32');
-				data = this.decodeBuffer(schem[key], {});
+				data = _.extend(data, this.decodeBuffer(schem[key], {}));
 				return;
 			}
 
@@ -68,6 +68,7 @@ class Response {
 			
 			// Schema describes a primitive
 			data[key] = this.decodeData(schem[key]);
+			console.log(key, data[key])
 			
 		});
 		return data;
