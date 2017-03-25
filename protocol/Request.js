@@ -105,6 +105,9 @@ class Request {
 			}
 			
 			// Schema describes a primitive
+			if (typeof payload[key] === 'undefined') {
+				 throw new Error('The value of ' + key + ' is not available in payload');
+			}
 			size = this.getDataSize(payload[key], schem[key], size);
 			
 		});
@@ -194,6 +197,9 @@ class Request {
 			}
 			
 			// Schema describes a primitive
+			if (typeof payload[key] === 'undefined') {
+				 throw new Error('The value of ' + key + ' is not available in payload');
+			}
 			offset = this.writeData(buffer, payload[key], schem[key], offset);
 			
 		});
