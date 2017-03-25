@@ -10,4 +10,5 @@ module.exports = {
 	LEADER_AND_ISR: 4,
 	GROUP_COORDINATOR: 10,
 	JOIN_GROUP: 11,
+	HEARTBEAT: 12,
 };

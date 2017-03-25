@@ -6,26 +6,15 @@ const Request = require('../../protocol/Request');
 
 const payload = {
 	group_id:  'group-test',
-	session_timeout:  30000,
-	rebalance_timeout:  40000,
-	member_id:  '', // new consumer
-	protocol_type:  'connect',
-	group_protocols: [
-		{
-			protocol_name: 'consumer',
-			protocol_metadata: 'zf', //???
-		},
-		{
-			protocol_name: 'connect',
-			protocol_metadata: 'fzef',
-		}
-	]
+	group_generation_id:  1,
+	member_id:  'KAFKA_NODE-a61d7caf-2eb2-4b9b-acc8-596eb8c126fb',
+
 };
 
 
 const correlationId = 666;
 
-const request = new Request(cst.JOIN_GROUP, 1, cst.CLIENT_ID);
+const request = new Request(cst.HEARTBEAT, 0, cst.CLIENT_ID);
 const requestPayload = request.getRequestPayload(payload, correlationId);
 
 const size = request.getSize(payload);
@@ -38,7 +27,7 @@ client.connect(() => {
 });
 
 client.on('response', (buff) => {
-	const response = new Response(buff, cst.JOIN_GROUP, 1);
+	const response = new Response(buff, cst.HEARTBEAT, 0);
 	const data = response.read();
 	console.log(JSON.stringify(data, null, 2));
 	client.close();
