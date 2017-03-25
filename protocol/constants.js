@@ -8,5 +8,6 @@ module.exports = {
 	OFFSETS: 2,
 	METADATA: 3,
 	LEADER_AND_ISR: 4,
+	GROUP_COORDINATOR: 10,
 	JOIN_GROUP: 11,
 };
