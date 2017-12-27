@@ -20,15 +20,10 @@ const size = metadataRequest.getSize(payload);
 const buff = Buffer.alloc(size);
 const offset = metadataRequest.write(buff, requestPayload, 0);
 
-const client = new Client();
-client.connect(() => {
-	client.send(buff);
-});
+const client = new Client('192.168.50.10:9092');
 
-client.on('response', (buff) => {
-	const metadataResponse = new Response(buff, cst.METADATA, 2);
-	const data = metadataResponse.read();
-	console.log(JSON.stringify(data, null, 2));	
-	client.close();
-
-});
+client.send_to_broker(buff, (buff) => {
+    const metadataResponse = new Response(buff, cst.METADATA, 2);
+    const data = metadataResponse.read();
+    console.log(JSON.stringify(data, null, 2)); 
+})

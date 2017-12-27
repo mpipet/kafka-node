@@ -54,15 +54,10 @@ const size = request.getSize(payload);
 const buff = Buffer.alloc(size);
 const offset = request.write(buff, requestPayload, 0);
 
-const client = new Client();
-client.connect(() => {
-	client.send(buff);
-});
+const client = new Client('192.168.50.10:9092');
 
-client.on('response', (buff) => {
+client.send_to_broker(buff, (buff) => {
 	const response = new Response(buff, cst.PRODUCE, 2);
 	const data = response.read();
 	console.log(JSON.stringify(data, null, 2));
-	client.close();
-
-});
+})
