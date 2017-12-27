@@ -1,15 +1,18 @@
-const _ = require('underscore');
+const _ = require('lodash');
 const crc32 = require('crc-32');
 const schemas = require('./schemas');
 
-const schema = {
-	Size: {
-		api_key: 'int16',
-		api_version: 'int16',
-		correlation_id: 'int32',
-		clientId: 'string',		
-	}
-};
+const schema = [
+    [
+		'Size', 
+		[
+		    ['api_key', 'int16'],
+		    ['api_version', 'int16'],
+		    ['correlation_id', 'int32'],
+		    ['clientId', 'string'],
+		]
+    ]
+];
 
 const INT8_SIZE = 1;
 const INT16_SIZE = 2;
@@ -20,10 +23,10 @@ class Request {
 
 	constructor(apiKey, apiVersion, clientId) {
 		// Add request schema to request headers
-		this.schema = {
-			Size: _.extend(schema.Size, schemas[apiKey].request[apiVersion])
-		};
-		
+		this.schema = schema;
+
+		this.schema[0][1] = _.concat(schema[0][1], schemas[apiKey].request[apiVersion]);
+
 		// add request payload to header payload
 		const headerPayload = {
 			api_key: apiKey,
@@ -53,85 +56,82 @@ class Request {
 		return buffer;
 	}
 
-	computeSize(schem, payload, size) {
-		Object.keys(schem).forEach((key) => {
-
-			// Schema describes Size of a structure
-			if (key === 'Size' && schem[key].constructor === Object) {
+	computeSize(schem, payload, size) {
+		schem.forEach((schem) => {
+			if (schem[0] === 'Size') {
 				size = this.getDataSize(payload, 'int32', size);
-				size = this.computeSize(schem[key], payload, size);								
-				return;
+				size = this.computeSize(schem[1], payload, size);
+				return;								
 			}
 
 			// Schema describes an Array with no array size but a buffer size
-			if (key === 'Batch' && schem[key].constructor === Object) {
+			if (schem[0] === 'Batch') {
 				size = this.getDataSize(payload, 'int32', size);
-				payload.forEach((elem) => {
-					size = this.computeSize(schem[key], elem, size);
+				payload[schem[0]].forEach((elem) => {
+					size = this.computeSize(schem[1], elem, size);
 				});
 				return;
 			}
 
 			// Schema describes Crc32 of a structure
-			if (key === 'Crc' && schem[key].constructor === Object) {
+			if (schem[0] === 'Crc') {
 				size = this.getDataSize(payload, 'int32', size);
-				size = this.computeSize(schem[key], payload, size);
+				size = this.computeSize(schem[1], payload, size);
 				return;
 			}
 
-
 			// Schema describes an Array of structure
-			if (key === 'Array' && schem[key].constructor === Object) {
+			if (schem[0] === 'Array' && Array.isArray(schem[1][0])) {
 				size = this.getDataSize(payload, 'Array', size);
 				payload.forEach((elem) => {
-					size = this.computeSize(schem[key], elem, size);
+					size = this.computeSize(schem[1], elem, size);
 				});
 				return;
 			}
 
 			// Schema describes an Array of primitives
-			if (key === 'Array' && schem[key].constructor === String) {
+			if (schem[1][0] === 'Array' && typeof schem[1][1] === 'string') {
 				size = this.getDataSize(payload, 'Array', size);
-				payload.forEach((elem) => {
-					size = this.getDataSize(elem, schem[key], size);
+				payload[schem[0]].forEach((elem) => {
+					size = this.getDataSize(elem, schem[1][1], size);
 				});
 				return;
 			}
 
 			// Schema describes a structure
-			if (schem[key].constructor === Object) {
-				size = this.computeSize(schem[key], payload[key], size);
+			if (Array.isArray(schem[1][0])) {
+				size = this.computeSize(schem[1], payload[schem[0]], size);
 				return;
 			}
-			
+
 			// Schema describes a primitive
-			if (typeof payload[key] === 'undefined') {
-				 throw new Error('The value of ' + key + ' is not available in payload');
+			if (typeof schem[1] === 'undefined') {
+				 throw new Error('The value of ' + schem[0] + ' is not available in payload');
 			}
-			size = this.getDataSize(payload[key], schem[key], size);
-			
-		});
+			size = this.getDataSize(payload[schem[0]], schem[1], size);
+
+		});	
+
 		return size;
 	}
 
 	encodeToBuffer(buffer, schem, payload, offset) {
-		Object.keys(schem).forEach((key) => {
-
+		schem.forEach((schem) => {
 			// Schema describes Size of a structure
-			if (key === 'Size' && schem[key].constructor === Object) {
+			if (schem[0] === 'Size') {
 				const sizeOffset = offset;
 				offset += INT32_SIZE; 
-				offset = this.encodeToBuffer(buffer, schem[key], payload, offset);
+				offset = this.encodeToBuffer(buffer, schem[1], payload, offset);
 				const size = offset - sizeOffset - INT32_SIZE;
 				this.writeInt32(buffer, size, sizeOffset);
 				return;
 			}
 
 			// Schema describes Crc32 of a structure
-			if (key === 'Crc' && schem[key].constructor === Object) {				
+			if (schem[0] === 'Crc') {				
 				const crcOffset = offset;
 				offset += INT32_SIZE;
-				offset = this.encodeToBuffer(buffer, schem[key], payload, offset);
+				offset = this.encodeToBuffer(buffer, schem[1], payload, offset);
 
 				const toCrcBufferLength = offset - crcOffset - INT32_SIZE;
 				const toCrcBuffer = Buffer.alloc(toCrcBufferLength);
@@ -144,12 +144,12 @@ class Request {
 			}
 
 			// Schema describes an Array with no array size but a buffer size
-			if (key === 'Batch' && schem[key].constructor === Object) {
+			if (schem[0] === 'Batch') {
 				const sizeOffset = offset;
 				offset += INT32_SIZE; 
 				
 				payload.forEach((elem) => {
-					offset = this.encodeToBuffer(buffer, schem[key], elem, offset);
+					offset = this.encodeToBuffer(buffer, schem[1], elem, offset);
 				});
 
 				const size = offset - sizeOffset - INT32_SIZE;
@@ -158,7 +158,7 @@ class Request {
 			}
 
 			// Schema describes an Array of structure which have no array size
-			if (key === 'Batch' && schem[key].constructor === String) {
+			if (schem[0] === 'Batch' && typeof schem[1][1] === 'string') {
 				const sizeOffset = offset;
 				offset += INT32_SIZE; 
 						
@@ -173,34 +173,34 @@ class Request {
 
 
 			// Schema describes an Array of structure
-			if (key === 'Array' && schem[key].constructor === Object) {
+			if (schem[0] === 'Array' && Array.isArray(schem[1][0])) {
 				offset = this.writeData(buffer, payload, 'Array', offset);
 				payload.forEach((elem) => {
-					offset = this.encodeToBuffer(buffer, schem[key], elem, offset);
+					offset = this.encodeToBuffer(buffer, schem[1], elem, offset);
 				});
 				return;
 			}
 
 			// Schema describes an Array of primitives
-			if (key === 'Array' && schem[key].constructor === String) {
-				offset = this.writeData(buffer, payload, 'Array', offset);
-				payload.forEach((elem) => {
-					offset = this.writeData(buffer, elem, schem[key], offset);
+			if (schem[1][0] === 'Array' && typeof schem[1][1] === 'string') {
+				offset = this.writeData(buffer, payload[schem[0]], 'Array', offset);
+				payload[schem[0]].forEach((elem) => {
+					offset = this.writeData(buffer, elem, schem[1][1], offset);
 				});
 				return;
 			}
 
 			// Schema describes a structure
-			if (schem[key].constructor === Object) {
-				offset = this.encodeToBuffer(buffer, schem[key], payload[key], offset);
+			if (Array.isArray(schem[1][0])) {
+				offset = this.encodeToBuffer(buffer, schem[1], payload[schem[0]], offset);
 				return;
 			}
 			
 			// Schema describes a primitive
-			if (typeof payload[key] === 'undefined') {
-				 throw new Error('The value of ' + key + ' is not available in payload');
+			if (typeof payload[schem[0]] === 'undefined') {
+				 throw new Error('The value of ' + schem[0] + ' is not available in payload');
 			}
-			offset = this.writeData(buffer, payload[key], schem[key], offset);
+			offset = this.writeData(buffer, payload[schem[0]], schem[1], offset);
 			
 		});
 		return offset;
