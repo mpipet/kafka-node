@@ -8,15 +8,14 @@ const correlationId = 666;
 
 const payload = {
 	topics: [
-		'test',
-		'live2'
+		'live-deliveries'
 	]
 };
 
 const metadataRequest = new Request(cst.METADATA, 2, cst.CLIENT_ID);
 const requestPayload = metadataRequest.getRequestPayload(payload, correlationId);
 
-const size = metadataRequest.getSize(payload);
+const size = metadataRequest.getSize(requestPayload);
 const buff = Buffer.alloc(size);
 const offset = metadataRequest.write(buff, requestPayload, 0);
 

@@ -20,8 +20,9 @@ const correlationId = 666;
 
 const request = new Request(cst.OFFSETS_FETCH, 1, cst.CLIENT_ID);
 const requestPayload = request.getRequestPayload(payload, correlationId);
-
-const size = request.getSize(payload);
+console.log('full payload', JSON.stringify(requestPayload, null, 2))
+const size = request.getSize(requestPayload);
+console.log('size', size);
 const buff = Buffer.alloc(size);
 const offset = request.write(buff, requestPayload, 0);
 const client = new Client('192.168.50.10:9092');

@@ -4,14 +4,12 @@ module.exports = {
             ['consumer_group', 'string'],
             [
                 'topics', [
+                    'Array', 
                     [
-                        'Array', 
+                        ['topic', 'string'],
                         [
-                            ['topic', 'string'],
-                            [
-                                'partitions',
-                                ['Array', 'int32']
-                            ]
+                            'partitions',
+                            ['Array', 'int32']
                         ]
                     ]
                 ]

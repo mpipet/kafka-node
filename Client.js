@@ -1,30 +1,28 @@
 const net = require('net');
 const EventEmitter = require('events').EventEmitter;
 
+const Request = require('./protocol/Request');
+const Response = require('./protocol/Response');
+const cst = require('./protocol/constants');
+const _ = require('lodash');
+
 class Client extends EventEmitter{
 
-	constructor(brokers) {
+	constructor(bootstrap_servers) {
 		super();
-		this.socks = [];
-		const hosts = brokers.split(',');
-		this.brokersConfig = hosts.map((host) => {
+		const servers = bootstrap_servers.split(',');
+		this.brokersConfig = servers.map((host) => {
 			const tmp = host.split(':');
 			return {host: tmp[0], port: tmp[1]};
 		});
 	}
 
-	connect(brokerIndex, callback) {
-		const brokerConf = this.brokersConfig[brokerIndex]; 
-		this.socks[brokerIndex] = new net.Socket();
-		this.socks[brokerIndex].connect(brokerConf.port, brokerConf.host, callback);		
-	}
-
-	send_to_broker(buff, callback) {
+	send(buff, callback) {
 		const brokerIndex = Math.floor(Math.random() * (this.brokersConfig.length - 0) + 0);
 
 		const brokerConf = this.brokersConfig[brokerIndex]; 
 		const sock = new net.Socket();
-		console.log(brokerConf.port, brokerConf.host)
+
 		this.on('response', (buff) => {
 			sock.destroy();
 			callback(buff);
@@ -33,11 +31,6 @@ class Client extends EventEmitter{
 		sock.connect(brokerConf.port, brokerConf.host, () => {
 			sock.write(buff, () => this.read(sock));
 		});				
-	}
-
-	send(brokerIndex, buff) {
-		const sock = this.socks[brokerIndex];
-		sock.write(buff, () => this.read());	
 	}
 
 	read(sock) {
@@ -52,15 +45,12 @@ class Client extends EventEmitter{
 		 	while (response === null) { 		
 			 	switch(state) {
 					case WAITING_RESPONSE_SIZE:
-						// console.log('WAITING_RESPONSE_SIZE');
 						const size = sock.read(4);
-						// console.log('size', size);
 						if(size === null) return;
 						responseSize = size.readInt32BE(0);
 						state = WAITING_PACKET;
 						break;
 					case WAITING_PACKET:
-						// console.log('WAITING_PACKET');
 						response = sock.read(responseSize);
 						
 						if(response === null) return;
@@ -72,10 +62,26 @@ class Client extends EventEmitter{
 
 	}
 
-	close(brokerIndex) {
-		this.socks[brokerIndex].destroy();
-	}
+	getMetadatas(topics, callback) {
+	    const payload = {
+	        topics: topics
+	    };
 
+	    const correlationId = 666;
+
+	    const metadataRequest = new Request(cst.METADATA, 2, cst.CLIENT_ID);
+	    const requestPayload = metadataRequest.getRequestPayload(payload, correlationId);
+
+	    const size = metadataRequest.getSize(requestPayload);
+	    const buff = Buffer.alloc(size);
+	    const offset = metadataRequest.write(buff, requestPayload, 0);
+	    this.send(buff, (buff) => {
+	        const metadataResponse = new Response(buff, cst.METADATA, 2);
+	        const data = metadataResponse.read();
+	        data.topic_metadata = _.filter(data.topic_metadata, ['is_internal', false]);
+	        callback(data); 
+	    })
+	} 
 }
 
 module.exports = Client;

@@ -13,27 +13,17 @@ class Response {
 			['correlation_id', 'int32']
 		];
 		
-		this.schema = _.concat(headerSchema, schemas[apiKey].response[apiVersion]);
+		this.schema = _.concat(headerSchema, schemas[apiKey].response[apiVersion]);	
 	}	
 
 	read() {
-		return this.decodeBuffer2(this.schema, {});
+		return this.decodeBuffer(this.schema, {});
 	}
 
-	decodeBuffer2(schem, data) {
+	decodeBuffer(schem, data) {
 		schem.forEach((schem) => {
-			if (schem[1][0] === 'Array' && Array.isArray(schem[1])) {
-				const size = this.decodeData('Array');
-				const structArray = [];
-				_.range(size).forEach((elem) => {
-					structArray.push(this.decodeBuffer2(schem[1][1], {}));
-				});
-				data[schem[0]] = structArray;
-				return;
-			}
-
 			// // Schema describes an Array of primitives
-			if (schem[1][0] === 'Array' && schem[1][1] === 'string') {
+			if (schem[1][0] === 'Array' && typeof schem[1][1] === 'string') {
 				const size = this.decodeData('Array');
 				const primitiveArray = [];
 				_.range(size).forEach((elem) => {
@@ -43,10 +33,21 @@ class Response {
 				return;
 			}
 
+			if (schem[1][0] === 'Array' && Array.isArray(schem[1])) {
+				const size = this.decodeData('Array');
+				const structArray = [];
+				_.range(size).forEach((elem) => {
+					structArray.push(this.decodeBuffer(schem[1][1], {}));
+				});
+				data[schem[0]] = structArray;
+				return;
+			}
+			
+
 			// Schema describes Size of a structure
 			if (schem[0] === 'Size') {
 				this.decodeData('int32');
-				data = _.extend(data, this.decodeBuffer2(schem[1], {}));
+				data = _.extend(data, this.decodeBuffer(schem[1], {}));
 				return;
 			}
 
@@ -56,7 +57,7 @@ class Response {
 				const batchOffsetStart = this.offset;
 				const structArray = [];
 				while(this.offset < batchOffsetStart + size) {
-					structArray.push(this.decodeBuffer2(schem[1], {}));
+					structArray.push(this.decodeBuffer(schem[1], {}));
 				}
 				data[schem[0]] = structArray;
 				return;
@@ -65,13 +66,13 @@ class Response {
 			// Schema describes Crc32 of a structure
 			if (schem[0] === 'Crc') {
 				this.decodeData('int32');
-				data = this.decodeBuffer2(schem[1], {});
+				data = this.decodeBuffer(schem[1], {});
 				return;
 			}
 
 			// Schema describes a structure
 			if (Array.isArray(schem[1])) {
-				data[schem[0]] = this.decodeBuffer2(schem[1][1], {});
+				data[schem[0]] = this.decodeBuffer(schem[1][1], {});
 				return;
 			}
 			
@@ -79,69 +80,6 @@ class Response {
 			data[schem[0]] = this.decodeData(schem[1]);
 		});
 
-		return data;
-	}
-
-	decodeBuffer(schem, data) {
-		Object.keys(schem).forEach((key) => {
-
-			if (key === 'Array' && schem[key].constructor === Object) {
-				const size = this.decodeData('Array');
-				const structArray = [];
-				_.range(size).forEach((elem) => {
-					structArray.push(this.decodeBuffer(schem[key], {}));
-				});
-				data = structArray;
-				return;
-			}
-
-			// // Schema describes an Array of primitives
-			if (key === 'Array' && schem[key].constructor === String) {
-				const size = this.decodeData('Array');
-				const primitiveArray = [];
-				_.range(size).forEach((elem) => {
-					primitiveArray.push(this.decodeData(schem[key]));
-				});
-				data = primitiveArray;
-				return;
-			}
-
-			// Schema describes Size of a structure
-			if (key === 'Size' && schem[key].constructor === Object) {
-				this.decodeData('int32');
-				data = _.extend(data, this.decodeBuffer(schem[key], {}));
-				return;
-			}
-
-			// Schema describes an Array with no array size but a buffer size
-			if (key === 'Batch' && schem[key].constructor === Object) {
-				const size = this.decodeData('int32');
-				const batchOffsetStart = this.offset;
-				const structArray = [];
-				while(this.offset < batchOffsetStart + size) {
-					structArray.push(this.decodeBuffer(schem[key], {}));
-				}
-				data = structArray;
-				return;
-			}
-
-			// Schema describes Crc32 of a structure
-			if (key === 'Crc' && schem[key].constructor === Object) {
-				this.decodeData('int32');
-				data = this.decodeBuffer(schem[key], {});
-				return;
-			}
-
-			// Schema describes a structure
-			if (schem[key].constructor === Object) {
-				data[key] = this.decodeBuffer(schem[key], {});
-				return;
-			}
-			
-			// Schema describes a primitive
-			data[key] = this.decodeData(schem[key]);
-			
-		});
 		return data;
 	}
 
@@ -192,7 +130,7 @@ class Response {
 		const size = this.buff.readIntBE(this.offset, 2);
 		this.offset += 2;
 
-		let string = '';
+		let string = null;
 		if (size > 0) {
 			string = this.buff.toString('utf-8', this.offset, this.offset + size);
 			this.offset += size;			

@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "async": "^2.6.0",
     "crc-32": "^1.0.1",
     "lodash": "^4.17.4",
     "node-int64": "^0.4.0"
