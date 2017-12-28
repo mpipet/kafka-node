@@ -15,7 +15,7 @@ client.getMetadatas(null, (metadatas) => {
 
     const topicsPartitions = {};
     metadatas.topic_metadata.forEach((topic_meta) => {
-        topicsPartitions[topic_meta.topic] = _.map(topic_meta.topic_metadata, 'partition_id'); 
+        topicsPartitions[topic_meta.topic] = _.map(topic_meta.topic_metadata, 'partition'); 
     });
 
     const calls = [
@@ -50,7 +50,7 @@ client.getMetadatas(null, (metadatas) => {
 
         const lag = {};
         _.each(offsetsList, (partitions, topic) => {        
-            lag[topic] = [];
+            lag[topic] = {};
             _.each(partitions, (data) => {
                 if (committedOffsets[topic][data.partition].error_code !== 0) {
                     lag[topic][data.partition] = -1;

@@ -18,7 +18,7 @@ class Cluster {
         metadatas.topic_metadata.forEach((metadata) => {
             this.topic_metadata[metadata.topic] = {};
             metadata.topic_metadata.forEach((partition_metadata) => {
-                this.topic_metadata[metadata.topic][partition_metadata.partition_id] = partition_metadata.leader;
+                this.topic_metadata[metadata.topic][partition_metadata.partition] = partition_metadata.leader;
             });
         });
     }
@@ -32,7 +32,6 @@ class Cluster {
         _.each(partitionTopics, (partitionTopic, topic) => {        
             _.each(partitionTopic, (partition) => {
                 const leader = this.topic_metadata[topic][partition];
-
                 if (typeof partitionTopicsByBrokers[leader] === 'undefined') {
                     partitionTopicsByBrokers[leader] = {};
                 }
@@ -43,7 +42,6 @@ class Cluster {
                 partitionTopicsByBrokers[leader][topic].push(partition);
             });
         });
-
         return partitionTopicsByBrokers;
     }
 
@@ -77,7 +75,7 @@ class Cluster {
                 const size = request.getSize(requestPayload);
                 const buff = Buffer.alloc(size);
                 const offset = request.write(buff, requestPayload, 0);
-
+                
                 const broker = this.brokers[leader].host + ':' + this.brokers[leader].port;
 
                 const client = new Client(broker);

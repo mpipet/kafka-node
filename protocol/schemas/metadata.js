@@ -37,7 +37,7 @@ module.exports = {
 								'Array',
 								[
 									['partition_error_code', 'int16'],
-									['partition_id', 'int32'],
+									['partition', 'int32'],
 									['leader', 'int32'],
 									[
 										'replicas', [
