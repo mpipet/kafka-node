@@ -45,75 +45,147 @@ class Cluster {
         return partitionTopicsByBrokers;
     }
 
+
+
+    findCoordinator(group, callback) {
+        const payload = {
+            group_id: group
+        };
+
+        const correlationId = 666;
+
+        const request = new Request(cst.FIND_COORDINATOR, 0, cst.CLIENT_ID);
+        const requestPayload = request.getRequestPayload(payload, correlationId);
+        const size = request.getSize(requestPayload);
+        const buff = Buffer.alloc(size);
+        const offset = request.write(buff, requestPayload, 0);
+
+        const broker = this.brokers[0].host + ':' + this.brokers[0].port;
+
+        const client = new Client(broker);
+
+        client.send(buff, (buff) => {
+            const response = new Response(buff, cst.FIND_COORDINATOR, 0);
+            const data = response.read();
+            callback(data);
+        })
+    }
+
+
+
     getCommittedOffsets(consumerGroup, partitionTopics, callback) {
-        const partitionTopicsByBrokers = this.getPartitionTopicsByBrokers(partitionTopics);
-        const payloadByBrokers = {};
-
-        _.each(partitionTopicsByBrokers, (partitionTopics, leader) => {
-
-            const topics = _.map(partitionTopics, (partitions, topic) => {
-                return {
-                    topic: topic,
-                    partitions: partitions
-                }
-            });
-
-            const payload = {
-                consumer_group: consumerGroup,
-                topics: topics
-            };
-
-            payloadByBrokers[leader] = payload;
-        });
-
-        const requests = _.map(payloadByBrokers, (payload, leader) => {
-            return (done) => {                
-                const correlationId = 666;
-
-                const request = new Request(cst.OFFSETS_FETCH, 1, cst.CLIENT_ID);
-                const requestPayload = request.getRequestPayload(payload, correlationId);
-                const size = request.getSize(requestPayload);
-                const buff = Buffer.alloc(size);
-                const offset = request.write(buff, requestPayload, 0);
-                
-                const broker = this.brokers[leader].host + ':' + this.brokers[leader].port;
-
-                const client = new Client(broker);
-
-                client.send(buff, (buff) => {
-
-                    const response = new Response(buff, cst.OFFSETS_FETCH, 1);
-                    const data = response.read();
-                    done(null, data);
-                })
-
-            }
-
-        });
-
-        async.parallel(requests, (err, results) => {
-            const partitionsByTopic = {};
-            _.each(results, (response) => {
-              _.each(response.responses, (topicResponse) => {
-                if (typeof partitionsByTopic[topicResponse.topic] === 'undefined') {
-                  partitionsByTopic[topicResponse.topic] = [];
-                }
-
-                partitionsByTopic[topicResponse.topic] = _.concat(partitionsByTopic[topicResponse.topic], topicResponse.partitions);
-              });
-            });
-
-            const mergedResponse = _.map(partitionsByTopic, (partitions, topic) => {
-              return {
+        const topics = _.map(partitionTopics, (partitions, topic) => {
+            return {
                 topic: topic,
                 partitions: partitions
-              }
-            });
-
-            results[0].responses = mergedResponse; 
-
-            callback(results[0])
+            }
         });
+
+        const payload = {
+            consumer_group: consumerGroup,
+            topics: topics
+        };
+
+        const correlationId = 666;
+
+        const request = new Request(cst.OFFSETS_FETCH, 1, cst.CLIENT_ID);
+        const requestPayload = request.getRequestPayload(payload, correlationId);
+        const size = request.getSize(requestPayload);
+        const buff = Buffer.alloc(size);
+        const offset = request.write(buff, requestPayload, 0);
+
+        this.findCoordinator(consumerGroup, (coordinator) => {
+
+            const broker = coordinator.host + ':' + coordinator.port;
+
+            const client = new Client(broker);
+
+            client.send(buff, (buff) => {
+
+                const response = new Response(buff, cst.OFFSETS_FETCH, 1);
+                const data = response.read();
+                callback(data);
+            })
+        });
+
+
+
+
+
+
+
+
+
+
+
+
+        // const partitionTopicsByBrokers = this.getPartitionTopicsByBrokers(partitionTopics);
+        // const payloadByBrokers = {};
+
+        // _.each(partitionTopicsByBrokers, (partitionTopics, leader) => {
+        //     const topics = _.map(partitionTopics, (partitions, topic) => {
+        //         return {
+        //             topic: topic,
+        //             partitions: partitions
+        //         }
+        //     });
+
+        //     const payload = {
+        //         consumer_group: consumerGroup,
+        //         topics: topics
+        //     };
+
+        //     payloadByBrokers[leader] = payload;
+        // });
+
+        // const requests = _.map(payloadByBrokers, (payload, leader) => {
+        //     return (done) => {                
+        //         const correlationId = 666;
+
+        //         const request = new Request(cst.OFFSETS_FETCH, 1, cst.CLIENT_ID);
+        //         const requestPayload = request.getRequestPayload(payload, correlationId);
+        //         const size = request.getSize(requestPayload);
+        //         const buff = Buffer.alloc(size);
+        //         const offset = request.write(buff, requestPayload, 0);
+
+        //         const broker = this.brokers[leader].host + ':' + this.brokers[leader].port;
+
+        //         const client = new Client(broker);
+
+        //         client.send(buff, (buff) => {
+
+        //             const response = new Response(buff, cst.OFFSETS_FETCH, 1);
+        //             const data = response.read();
+        //             done(null, data);
+        //         })
+
+        //     }
+
+        // });
+
+        // async.parallel(requests, (err, results) => {
+        //     const partitionsByTopic = {};
+        //     _.each(results, (response) => {
+        //       _.each(response.responses, (topicResponse) => {
+        //         if (typeof partitionsByTopic[topicResponse.topic] === 'undefined') {
+        //           partitionsByTopic[topicResponse.topic] = [];
+        //         }
+
+        //         partitionsByTopic[topicResponse.topic] = _.concat(partitionsByTopic[topicResponse.topic], topicResponse.partitions);
+        //       });
+        //     });
+
+        //     const mergedResponse = _.map(partitionsByTopic, (partitions, topic) => {
+        //       return {
+        //         topic: topic,
+        //         partitions: partitions
+        //       }
+        //     });
+
+        //     results[0].responses = mergedResponse; 
+
+        //     callback(results[0])
+        // });
     }
 
     getOffsetsList(partitionTopics, callback) {

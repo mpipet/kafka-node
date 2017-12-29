@@ -9,7 +9,8 @@ schemas[cnst.METADATA] = require('./metadata');
 schemas[cnst.LEADER_AND_ISR] = require('./leaderAndIsr');
 schemas[cnst.OFFSETS_FETCH] = require('./offsetsFetch');
 schemas[cnst.JOIN_GROUP] = require('./joinGroup');
-schemas[cnst.GROUP_COORDINATOR] = require('./groupCoordinator');
+schemas[cnst.FIND_COORDINATOR] = require('./findCoordinator');
 schemas[cnst.HEARTBEAT] = require('./heartbeat');
+schemas[cnst.DESCRIBE_GROUPS] = require('./describeGroups');
 
 module.exports = schemas;
