@@ -21,7 +21,7 @@ const offset = metadataRequest.write(buff, requestPayload, 0);
 
 const client = new Client('192.168.50.10:9092');
 
-client.send_to_broker(buff, (buff) => {
+client.send(buff, (buff) => {
     const metadataResponse = new Response(buff, cst.METADATA, 2);
     const data = metadataResponse.read();
     console.log(JSON.stringify(data, null, 2)); 
