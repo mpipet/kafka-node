@@ -1,6 +1,5 @@
 const EventEmitter = require('events').EventEmitter;
 
-
 const WAITING_RESPONSE_SIZE = 0;
 const WAITING_PACKET = 1;
 
