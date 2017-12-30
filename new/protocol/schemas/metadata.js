@@ -70,10 +70,10 @@ const metadataSchema = {
             ['node_id', 'int32'],
             ['host', 'string'],
             ['port', 'int32'],
+            ['rack', 'string'],
           ]
         ]
       ],
-      ['cluster_id', 'string'],
       ['controller_id', 'int32'],
       [
         'topic_metadata',
@@ -82,6 +82,7 @@ const metadataSchema = {
           [
             ['error_code', 'int16'],
             ['topic', 'string'],
+            ['is_internal', 'boolean'],
             [
               'partition_metadata',
               [

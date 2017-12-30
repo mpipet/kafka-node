@@ -97,7 +97,6 @@ class Request {
         return;
       }
 
-
       // Schema describes a structure
       if (Array.isArray(schem[1][0])) {
         size = this.computeSize(schem[1], payload[schem[0]], size);
@@ -171,7 +170,6 @@ class Request {
         this.writeInt32(buffer, size, sizeOffset);
         return;
       }
-
 
       // Schema describes an Array of structure
       if (schem[1][0] === 'Array' && Array.isArray(schem[1][1])) {
@@ -305,7 +303,7 @@ Request.createBuffer = function(apiKey, apiVersion, correlationId, payload) {
 
   const size = request.getSize(requestPayload);
   const buffer = Buffer.alloc(size);
-  const offset = request.write(buffer, requestPayload, 0);
+  request.write(buffer, requestPayload, 0);
   return buffer;
 }
 

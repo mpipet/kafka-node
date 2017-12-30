@@ -14,7 +14,7 @@ class PacketStreamWrapper extends EventEmitter {
     this.stream = stream;
 
     this.stream.on('readable', () => {     
-      while (response === null) {     
+      while (true) {     
         switch(state) {
           case WAITING_RESPONSE_SIZE:
             const size = this.stream.read(4);
@@ -24,9 +24,9 @@ class PacketStreamWrapper extends EventEmitter {
             break;
           case WAITING_PACKET:
             response = this.stream.read(responseSize);
-            
             if(response === null) return;
             this.emit('packet', response);
+            state = WAITING_RESPONSE_SIZE;
             break;
         }
       }
@@ -34,7 +34,7 @@ class PacketStreamWrapper extends EventEmitter {
 
   }
 
-  send(buf) {
+  write(buf) {
     const header = new Buffer(4);
     header.writeUInt32BE(buf.length, 0);
     this.stream.write(Buffer.concat([header, buf]));

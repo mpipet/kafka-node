@@ -142,7 +142,7 @@ class Response {
     const size = this.buff.readIntBE(this.offset, 4);
     this.offset += 4;
 
-    let string = '';
+    let string = null;
     if (size > 0) {
       string = this.buff.toString('utf-8', this.offset, this.offset + size);
       this.offset += size;            

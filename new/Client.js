@@ -9,49 +9,68 @@ class Client extends EventEmitter {
     
   constructor() {
     super();
-    this.sock = null;
+    this.socket = null;
     this.ps = null;
-    this.waiting = {};
+    this.correlationId = 0;
   }
 
   connect(options, callback) {        
     if(callback) this.once('connect', callback);
 
-    this.sock = net.createConnection(options, () => {
-      this.ps = new PacketStreamWrapper(this.sock);
+    this.socket = net.createConnection(options, () => {
+      this.ps = new PacketStreamWrapper(this.socket);
       this.ps.on('packet', (buff) => this.onpacket(buff));
       this.emit('connect');
     });
+
+    this.socket.on('error', (err) => this.onerror(err));
+    this.socket.once('close', () => this.onclose());
   }
 
-  onpacket(buff) {
-    const correlationId  = buff.readInt32BE(0);
-    if (!correlationId in this.waiting) {
-      throw new Error('correlation_id do not correspond to any previous requests');
+  onpacket(buffer) {
+    this.emit('response', buffer);
+  }
+
+  onerror(err) {
+    this.emit(err);
+  }
+
+  onclose() {
+    this.socket.removeListener('error', this.onerror);
+    this.socket = null;
+    if (this.ps) {
+        this.ps.removeListener('packet', this.onpacket);
+        this.ps = null;
     }
-
-    const infos =  this.waiting[correlationId];
-
-    const response = new Response(buff, infos.apiKey, infos.apiVersion);
-    const data = response.read();
-
-    delete this.waiting[correlationId];
-    this.emit('response', data);
+    this.emit('close');
   }
 
-  send(apiKey, apiVersion, payload) {
-    const correlationId = Math.floor(Math.random() * 2147483647);
-    this.waiting[correlationId] = {
-      apiKey: apiKey,
-      apiVersion: apiVersion
+  write(buffer) {
+    this.ps.write(buffer);
+  }
+
+  send(apiKey, apiVersion, payload, callback) {
+    const correlationId = ++this.correlationId;
+
+    const onpacket = (buffer) => {
+      this.ps.removeListener('packet', onpacket);
+      const responseCorrelationId  = buffer.readInt32BE(0);
+
+      if (correlationId === responseCorrelationId) {
+        const response = new Response(buffer, apiKey, apiVersion);
+        const data = response.read();
+        callback(null, data);
+      }
     };
 
+    this.ps.on('packet', onpacket);
+
     const buffer = Request.createBuffer(apiKey, apiVersion, correlationId, payload);
-    this.ps.send(buffer);
+    this.write(buffer);
   }
 
   close() {
-    this.sock.destroy();
+    this.socket.destroy();
   }
 
 }
