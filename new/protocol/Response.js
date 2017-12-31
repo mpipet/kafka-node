@@ -8,12 +8,7 @@ class Response {
   constructor(buff, apiKey, apiVersion) {
     this.buff = buff;
     this.offset = 0;
-
-    const headerSchema = [
-      ['correlation_id', 'int32']
-    ];
-    
-    this.schema = _.concat(headerSchema, schemas[apiKey].response[apiVersion]); 
+    this.schema = schemas[apiKey].response[apiVersion]; 
   }   
 
   read() {
@@ -22,7 +17,7 @@ class Response {
 
   decodeBuffer(schem, data) {
     schem.forEach((schem) => {
-      // // Schema describes an Array of primitives
+      // Schema describes an Array of primitives
       if (schem[1][0] === 'Array' && typeof schem[1][1] === 'string') {
         const size = this.decodeData('Array');
         const primitiveArray = [];

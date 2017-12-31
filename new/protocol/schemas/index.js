@@ -12,7 +12,7 @@ schemas[cnst.METADATA] = require('./metadata');
 // schemas[cnst.JOIN_GROUP] = require('./joinGroup');
 schemas[cnst.FIND_COORDINATOR] = require('./findCoordinator');
 // schemas[cnst.HEARTBEAT] = require('./heartbeat');
-// schemas[cnst.DESCRIBE_GROUPS] = require('./describeGroups');
+schemas[cnst.DESCRIBE_GROUPS] = require('./describeGroups');
 schemas[cnst.API_VERSIONS] = require('./apiVersions');
 
 module.exports = schemas;

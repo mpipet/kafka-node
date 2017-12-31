@@ -81,7 +81,7 @@ class Request {
         }
         payload[schem[0]].forEach((elem) => {
           size = this.getDataSize(elem, schem[1][1], size);
-        });
+        });    
         return;
       }
 
@@ -232,6 +232,10 @@ class Request {
     return INT8_SIZE;
   }
 
+  getBooleanSize(data) {
+    return INT8_SIZE;
+  }
+
   getInt16Size(data) {
     return INT16_SIZE;
   }
@@ -259,6 +263,10 @@ class Request {
   /*
    * primitives writters
    */
+  writeBoolean(buff, boolean, offset) {
+    return buff.writeIntBE(boolean, offset, INT8_SIZE);
+  }
+
   writeInt8(buff, integer, offset) {
     return buff.writeIntBE(integer, offset, INT8_SIZE);
   }

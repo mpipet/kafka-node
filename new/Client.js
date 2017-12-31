@@ -51,14 +51,18 @@ class Client extends EventEmitter {
 
   send(apiKey, apiVersion, payload, callback) {
     const correlationId = ++this.correlationId;
+    payload.correlation_id = correlationId;
 
     const onpacket = (buffer) => {
       this.ps.removeListener('packet', onpacket);
-      const responseCorrelationId  = buffer.readInt32BE(0);
+      const respCorrelationId  = buffer.readInt32BE(0);
 
-      if (correlationId === responseCorrelationId) {
+      if (correlationId === respCorrelationId) {
         const response = new Response(buffer, apiKey, apiVersion);
+        //@TODO see what to do with correlation id in response parser
+        response.offset = 4;
         const data = response.read();
+
         callback(null, data);
       }
     };

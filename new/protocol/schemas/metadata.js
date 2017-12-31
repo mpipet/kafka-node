@@ -10,8 +10,8 @@ const metadataSchema = {
       [
         'topics',
         ['Array', 'string'],
-        ['allow_auto_topic_creation', 'boolean'],
-      ]
+      ],
+      ['allow_auto_topic_creation', 'boolean']
     ]
   },
   response: {
@@ -27,8 +27,6 @@ const metadataSchema = {
           ]
         ]
       ],
-      ['cluster_id', 'string'],
-      ['controller_id', 'int32'],
       [
         'topic_metadata',
         [
@@ -74,6 +72,54 @@ const metadataSchema = {
           ]
         ]
       ],
+      ['controller_id', 'int32'],
+      [
+        'topic_metadata',
+        [
+          'Array',
+          [
+            ['error_code', 'int16'],
+            ['topic', 'string'],
+            ['is_internal', 'boolean'],
+            [
+              'partition_metadata',
+              [
+                'Array',
+                [
+                  ['error_code', 'int16'],
+                  ['partition', 'int32'],
+                  ['leader', 'int32'],
+                  [
+                    'replicas', [
+                      'Array', 'int32'
+                    ]
+                  ],
+                  [
+                    'isr', [
+                      'Array', 'int32'
+                    ]
+                  ]
+                ] 
+              ] 
+            ]
+          ]
+        ]
+      ]
+    ],
+    2: [
+      [
+        'brokers',
+        [
+          'Array',
+          [
+            ['node_id', 'int32'],
+            ['host', 'string'],
+            ['port', 'int32'],
+            ['rack', 'string'],
+          ]
+        ]
+      ],
+      ['cluster_id', 'string'],
       ['controller_id', 'int32'],
       [
         'topic_metadata',
@@ -165,6 +211,7 @@ const metadataSchema = {
             ['node_id', 'int32'],
             ['host', 'string'],
             ['port', 'int32'],
+            ['rack', 'string'],
           ]
         ]
       ],
@@ -177,6 +224,7 @@ const metadataSchema = {
           [
             ['error_code', 'int16'],
             ['topic', 'string'],
+            ['is_internal', 'boolean'],
             [
               'partition_metadata',
               [
@@ -213,9 +261,7 @@ metadataSchema.request[3] = metadataSchema.request[0];
 
 metadataSchema.request[5] = metadataSchema.request[4];
 
-metadataSchema.response[2] = metadataSchema.request[1];
-
-metadataSchema.response[4] = metadataSchema.request[3];
+metadataSchema.response[4] = metadataSchema.response[3];
 
 
 
