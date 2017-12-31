@@ -17,62 +17,65 @@ class Response {
 
   decodeBuffer(schem, data) {
     schem.forEach((schem) => {
+      const key = schem[0];
+      const value = schem[1];
+
       // Schema describes an Array of primitives
-      if (schem[1][0] === 'Array' && typeof schem[1][1] === 'string') {
+      if (value[0] === 'Array' && typeof value[1] === 'string') {
         const size = this.decodeData('Array');
         const primitiveArray = [];
         _.range(size).forEach((elem) => {
-          primitiveArray.push(this.decodeData(schem[1][1]));
+          primitiveArray.push(this.decodeData(value[1]));
         });
-        data[schem[0]] = primitiveArray;
+        data[key] = primitiveArray;
         return;
       }
 
-      if (schem[1][0] === 'Array' && Array.isArray(schem[1])) {
+      if (value[0] === 'Array' && Array.isArray(value)) {
         const size = this.decodeData('Array');
         const structArray = [];
         _.range(size).forEach((elem) => {
-          structArray.push(this.decodeBuffer(schem[1][1], {}));
+          structArray.push(this.decodeBuffer(value[1], {}));
         });
-        data[schem[0]] = structArray;
+        data[key] = structArray;
         return;
       }
       
 
       // Schema describes Size of a structure
-      if (schem[0] === 'Size') {
+      if (key === 'Size') {
         this.decodeData('int32');
-        data = _.extend(data, this.decodeBuffer(schem[1], {}));
+        data = _.extend(data, this.decodeBuffer(value, {}));
         return;
       }
 
       // Schema describes an Array with no array size but a buffer size
-      if (schem[0] === 'Batch') {
+      if (key === 'Batch') {
         const size = this.decodeData('int32');
         const batchOffsetStart = this.offset;
         const structArray = [];
         while(this.offset < batchOffsetStart + size) {
-          structArray.push(this.decodeBuffer(schem[1], {}));
+          structArray.push(this.decodeBuffer(value, {}));
         }
-        data[schem[0]] = structArray;
+        data[key] = structArray;
         return;
       }
 
       // Schema describes Crc32 of a structure
-      if (schem[0] === 'Crc') {
+      if (key === 'Crc') {
         this.decodeData('int32');
-        data = this.decodeBuffer(schem[1], {});
+        data = this.decodeBuffer(value, {});
         return;
       }
 
       // Schema describes a structure
-      if (Array.isArray(schem[1])) {
-        data[schem[0]] = this.decodeBuffer(schem[1][1], {});
+      if (Array.isArray(value)) {
+        data[key] = this.decodeBuffer(value[1], {});
         return;
       }
       
       // Schema describes a primitive
-      data[schem[0]] = this.decodeData(schem[1]);
+      data[key] = this.decodeData(value);
     });
 
     return data;
