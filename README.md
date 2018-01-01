@@ -1,6 +1,6 @@
 kafka-node
 =============
-### A Kafka protocol client
+### A Kafka protocol client (work in progress, do not use in production)
 
 This client is primarily intended to administrate your kafka cluster, not only to produce and consume.
 It exposes protocol api directly and some additional functionalities. 
@@ -23,14 +23,12 @@ cluster = new Cluster(options);
 
 // Metadata api
 const apiKey = 3;
-const payload = {'topics': null, allow_auto_topic_creation: false}
+const payload = {'topics': null, allow_auto_topic_creation: false};
 
 cluster.on('ready', () => {
-  console.log('ready');
   cluster.sendToRandomBroker(apiKey, payload, (err, data) => {
     console.log('METADATA', data);
     cluster.close();
-
   })
 });
 
