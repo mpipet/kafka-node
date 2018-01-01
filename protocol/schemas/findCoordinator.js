@@ -18,7 +18,7 @@ module.exports = {
     1: [
       ['throttle_time_ms', '32'],
       ['error_code', 'int16'],
-      ['error_message', 'string'],
+      ['error_message', 'nullable_string'],
       ['node_id', 'int32'],
       ['host', 'string'],
       ['port', 'int32']

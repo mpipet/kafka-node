@@ -8,6 +8,15 @@ class Response {
   constructor(buff, apiKey, apiVersion) {
     this.buff = buff;
     this.offset = 0;
+
+    if (typeof schemas[apiKey] === 'undefined') {
+      throw new Error('Unsupported api key: ' + apiKey);
+    }
+
+    if (typeof schemas[apiKey].response[apiVersion] === 'undefined') {
+      throw new Error('Unsupported api version: ' + apiVersion);
+    }
+
     this.schema = schemas[apiKey].response[apiVersion]; 
   }   
 
@@ -41,7 +50,6 @@ class Response {
         return;
       }
       
-
       // Schema describes Size of a structure
       if (key === 'Size') {
         this.decodeData('int32');
@@ -124,12 +132,28 @@ class Response {
     return size;
   }
 
-  readString() {
+  readNullable_string() {
     const size = this.buff.readIntBE(this.offset, 2);
     this.offset += 2;
 
     let string = null;
     if (size > 0) {
+      string = this.buff.toString('utf-8', this.offset, this.offset + size);
+      this.offset += size;            
+    }
+    return string;
+  }
+
+  readString() {
+    const size = this.buff.readIntBE(this.offset, 2);
+    this.offset += 2;
+
+    if (size < 0) {
+      throw new Error('Invalid string size: ' + size);
+    }
+
+    let string = '';
+    if (size >= 0) {
       string = this.buff.toString('utf-8', this.offset, this.offset + size);
       this.offset += size;            
     }

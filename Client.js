@@ -21,9 +21,10 @@ class Client extends EventEmitter {
       this.ps = new PacketStreamWrapper(this.socket);
       this.ps.on('packet', (buff) => this.onpacket(buff));
       this.emit('connect');
-    });
+    });    
 
     this.socket.on('error', (err) => this.onerror(err));
+    this.socket.once('end', () => this.onend());
     this.socket.once('close', () => this.onclose());
   }
 
@@ -32,11 +33,16 @@ class Client extends EventEmitter {
   }
 
   onerror(err) {
-    this.emit(err);
+    this.emit('error', err);
+  }
+
+  onend() {
+    this.emit('end');
   }
 
   onclose() {
     this.socket.removeListener('error', this.onerror);
+    this.socket.removeListener('end', this.onend);
     this.socket = null;
     if (this.ps) {
         this.ps.removeListener('packet', this.onpacket);
@@ -53,8 +59,13 @@ class Client extends EventEmitter {
     const correlationId = ++this.correlationId;
     payload.correlation_id = correlationId;
 
+    // const onend = () => {
+    //   callback('Broker disconnected', null);
+    // }
+
     const onpacket = (buffer) => {
       this.ps.removeListener('packet', onpacket);
+      // this.socket.removeListener('end', onend);
       const respCorrelationId  = buffer.readInt32BE(0);
 
       if (correlationId === respCorrelationId) {
@@ -66,6 +77,8 @@ class Client extends EventEmitter {
         callback(null, data);
       }
     };
+
+    // this.socket.once('end', onend);
 
     this.ps.on('packet', onpacket);
 

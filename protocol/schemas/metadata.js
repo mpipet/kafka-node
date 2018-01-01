@@ -68,7 +68,7 @@ const metadataSchema = {
             ['node_id', 'int32'],
             ['host', 'string'],
             ['port', 'int32'],
-            ['rack', 'string'],
+            ['rack', 'nullable_string'],
           ]
         ]
       ],
@@ -115,11 +115,11 @@ const metadataSchema = {
             ['node_id', 'int32'],
             ['host', 'string'],
             ['port', 'int32'],
-            ['rack', 'string'],
+            ['rack', 'nullable_string'],
           ]
         ]
       ],
-      ['cluster_id', 'string'],
+      ['cluster_id', 'nullable_string'],
       ['controller_id', 'int32'],
       [
         'topic_metadata',
@@ -164,10 +164,11 @@ const metadataSchema = {
             ['node_id', 'int32'],
             ['host', 'string'],
             ['port', 'int32'],
+            ['rack', 'nullable_string'],
           ]
         ]
       ],
-      ['cluster_id', 'string'],
+      ['cluster_id', 'nullable_string'],
       ['controller_id', 'int32'],
       [
         'topic_metadata',
@@ -176,6 +177,7 @@ const metadataSchema = {
           [
             ['error_code', 'int16'],
             ['topic', 'string'],
+            ['is_internal', 'boolean'],
             [
               'partition_metadata',
               [
@@ -211,11 +213,11 @@ const metadataSchema = {
             ['node_id', 'int32'],
             ['host', 'string'],
             ['port', 'int32'],
-            ['rack', 'string'],
+            ['rack', 'nullable_string'],
           ]
         ]
       ],
-      ['cluster_id', 'string'],
+      ['cluster_id', 'nullable_string'],
       ['controller_id', 'int32'],
       [
         'topic_metadata',

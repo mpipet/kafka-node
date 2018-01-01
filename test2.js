@@ -8,7 +8,7 @@ const cst = require('./protocol/constants');
 const Response = require('./protocol/Response');
 const Request = require('./protocol/Request');
 
-const cluster = new Cluster('192.168.50.10:9092');
+const cluster = new Cluster('192.168.33.33:9092');
 cluster.on('discovered', () => {
 
     cluster.getMetadatas(null, (metadatas) => {

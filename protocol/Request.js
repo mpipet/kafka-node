@@ -15,10 +15,19 @@ class Request {
       ['api_key', 'int16'],
       ['api_version', 'int16'],
       ['correlation_id', 'int32'],
-      ['clientId', 'string']
+      ['clientId', 'nullable_string']
     ];
     // Add request schema to request headers
     this.schema = schema;
+
+    if (typeof schemas[apiKey] === 'undefined') {
+      throw new Error('Unsupported api key: ' + apiKey);
+    }
+
+    if (typeof schemas[apiKey].request[apiVersion] === 'undefined') {
+      throw new Error('Unsupported api version: ' + apiVersion);
+    }
+
     this.schema = _.concat(schema, schemas[apiKey].request[apiVersion]);
 
     // add request payload to header payload
@@ -26,7 +35,7 @@ class Request {
       api_key: apiKey,
       api_version: apiVersion,
       correlation_id: 0,
-      clientId: clientId,         
+      clientId: null,         
     };
     this.headerPayload = headerPayload;
   }
@@ -82,6 +91,7 @@ class Request {
         if (payload[key] === null) {
           return
         }
+
         payload[key].forEach((elem) => {
           size = this.getDataSize(elem, value[1], size);
         });    
@@ -263,7 +273,20 @@ class Request {
   }
 
   getStringSize(data) {
+    if (data === null) {
+      throw new Error('Unsupported null string');
+    }
+
     return INT16_SIZE + data.length;
+  }
+
+  getNullable_stringSize(data) {    
+    let size = 0;
+    if (data !== null) {
+      size = data.length;
+    }
+
+    return INT16_SIZE + size;
   }
 
   /*
@@ -298,8 +321,26 @@ class Request {
   }
 
   writeString(buff, string, offset) {
+    if (string === null) {
+      throw new Error('Unsupported null string');
+    }
+
     offset = this.writeInt16(buff, string.length, offset);
     offset += buff.write(string, offset, string.length);
+    return offset;
+  }
+
+  writeNullable_string(buff, string, offset) {
+    let size = -1;
+
+    if (string !== null) {
+      size = string.length;
+    }
+
+    offset = this.writeInt16(buff, size, offset);
+    if (string !== null) {
+      offset += buff.write(string, offset, size);
+    }
     return offset;
   }
 
@@ -319,6 +360,17 @@ Request.createBuffer = function(apiKey, apiVersion, correlationId, payload) {
   const buffer = Buffer.alloc(size);
   request.write(buffer, requestPayload, 0);
   return buffer;
+}
+
+Request.getbestApiVersion = function(apiKey) {
+  if (typeof schemas[apiKey] === 'undefined') {
+    throw new Error('Unsupported api key: ' + apiKey);
+  }
+
+  return _.map(
+    Object.keys(schemas[apiKey].request),
+    (version) => parseInt(version, 10)
+  );
 }
 
 module.exports = Request;
