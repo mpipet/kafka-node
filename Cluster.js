@@ -48,7 +48,7 @@ class Cluster extends EventEmitter {
 
     //@TODO use async to make the code cleaner
     const client = new Client();   
-    
+
     client.once('end', () => {
       const error = 'Broker at ' + server.host + ':' + server.port + ' closed the connection';
       this.emit('error', error);
@@ -153,7 +153,7 @@ class Cluster extends EventEmitter {
     this.clearheartBeats();
     const closedCbs = [];
     _.each(this.connections, (connection) => {
-      //@TOOD expose socket destroyed attribute in the client 
+      //@TOOD expose client closed/destroyed attribute to mimic the socket.destroyed attribute 
       if (connection.socket.destroyed === false) {
         connection.close();        
         closedCbs.push((done) => connection.once('close', () =>  done()));
