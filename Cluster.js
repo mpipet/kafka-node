@@ -63,9 +63,9 @@ class Cluster extends EventEmitter {
         this.apiVersions = _.keyBy(apiVersions.api_versions, 'api_key');
 
         // retrieve cluster members
-        client.send(cst.METADATA, 0, {topics: null}, (err, metadata) => {
+        client.send(cst.METADATA, 0, {topics: []}, (err, metadata) => {
           if (err) throw new Error(err);
-
+          this.brokers = metadata.brokers;
           this.connect(metadata.brokers, () => {           
             callback();
             client.close();
@@ -91,7 +91,6 @@ class Cluster extends EventEmitter {
 
   connect(brokersConfigs, callback) {
     const configs = _.keyBy(brokersConfigs, 'node_id');
-
     _.each(configs, (brokerConf, brokerId) => {
       const client = new Client();
       this.connections[brokerId] = client;
@@ -130,9 +129,10 @@ class Cluster extends EventEmitter {
   sendToRandomBroker(apiKey, payload, callback) {
     const clusterSize = Object.keys(this.brokers).length;
     const brokerIndex = Math.floor(Math.random() * clusterSize);
+    const brokerId = this.brokers[brokerIndex].node_id;
 
     const apiVersion = this.getBestApiVersion(apiKey);
-    this.connections[brokerIndex].send(apiKey, apiVersion, payload, callback);
+    this.connections[brokerId].send(apiKey, apiVersion, payload, callback);
   }
 
   sendToCoordinators() {
